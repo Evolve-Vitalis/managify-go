@@ -12,6 +12,8 @@ import (
 var secretKey = []byte(os.Getenv("SECRET_KEY"))
 
 func CreateToken(user *models.User) (string, error) {
+
+	var log = logrus.New()
 	mapClaims := jwt.MapClaims{
 		"id":    user.ID,
 		"name":  user.FullName,
@@ -23,9 +25,9 @@ func CreateToken(user *models.User) (string, error) {
 
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, mapClaims)
 
-	logrus.Info(claims)
-	logrus.Info(claims.Header)
-	logrus.Info(claims.Signature)
+	log.Info(claims)
+	log.Info(claims.Header)
+	log.Info(claims.Signature)
 
 	tokenString, err := claims.SignedString(secretKey)
 	if err != nil {
