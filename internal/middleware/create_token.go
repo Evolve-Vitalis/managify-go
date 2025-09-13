@@ -15,12 +15,13 @@ func CreateToken(user *models.User) (string, error) {
 
 	var log = logrus.New()
 	mapClaims := jwt.MapClaims{
-		"id":    user.ID,
-		"name":  user.FullName,
-		"email": user.Email,
-		"iss":   "user",
-		"exp":   time.Now().Add(time.Hour).Unix(),
-		"iat":   time.Now().Unix(),
+		"id":       user.ID,
+		"name":     user.FullName,
+		"email":    user.Email,
+		"is_admin": user.IsAdmin,
+		"iss":      "user",
+		"exp":      time.Now().Add(time.Hour).Unix(),
+		"iat":      time.Now().Unix(),
 	}
 
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, mapClaims)

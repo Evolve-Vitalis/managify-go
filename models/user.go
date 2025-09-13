@@ -14,4 +14,5 @@ type User struct {
 	Subscriptions  []primitive.ObjectID `bson:"subscriptions,omitempty" json:"-"`
 	OwnedProjects  []primitive.ObjectID `bson:"owned_projects,omitempty" json:"-"`
 	TeamProjects   []primitive.ObjectID `bson:"team_projects,omitempty" json:"-"`
+	IsAdmin        bool                 `bson:"is_admin" json:"is_admin"`
 }

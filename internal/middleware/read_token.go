@@ -9,21 +9,20 @@ import (
 )
 
 func ExtractUserFromClaims(claims jwt.MapClaims) (*models.User, error) {
-
+	// ID
 	idStr, ok := claims["id"].(string)
 	if !ok {
 		return nil, fmt.Errorf("id claim missing or invalid")
 	}
-
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid objectID: %v", err)
 	}
 
 	// FullName
-	fullName, ok := claims["full_name"].(string)
+	fullName, ok := claims["name"].(string)
 	if !ok {
-		return nil, fmt.Errorf("full_name claim missing or invalid")
+		return nil, fmt.Errorf("name claim missing or invalid")
 	}
 
 	// Email
@@ -32,10 +31,18 @@ func ExtractUserFromClaims(claims jwt.MapClaims) (*models.User, error) {
 		return nil, fmt.Errorf("email claim missing or invalid")
 	}
 
+	// IsAdmin
+	isAdmin, ok := claims["is_admin"].(bool)
+	if !ok {
+		// Eğer claim yoksa varsayılan false
+		isAdmin = false
+	}
+
 	user := &models.User{
 		ID:       id,
 		FullName: fullName,
 		Email:    email,
+		IsAdmin:  isAdmin,
 	}
 
 	return user, nil
