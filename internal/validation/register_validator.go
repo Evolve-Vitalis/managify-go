@@ -15,7 +15,7 @@ import (
 )
 
 func CreateRegisterValidator(c *fiber.Ctx) error {
-	us := service.GetUserService() // tek instance
+	us := service.GetUserService()
 	log := logrus.New()
 	log.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
