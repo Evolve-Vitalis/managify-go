@@ -8,7 +8,7 @@ type Project struct {
 	Description string               `bson:"description" json:"description"`
 	Category    string               `bson:"category" json:"category"`
 	Tags        []string             `bson:"tags,omitempty" json:"tags"`
-	OwnerID     primitive.ObjectID   `bson:"owner_id,omitempty" json:"-"`
-	IssueIDs    []primitive.ObjectID `bson:"issues,omitempty" json:"-"`
-	TeamIDs     []primitive.ObjectID `bson:"team,omitempty" json:"-"`
+	OwnerID     primitive.ObjectID   `bson:"owner_id,omitempty" json:"owner_id"`
+	IssueIDs    []primitive.ObjectID `bson:"issues,omitempty" json:"issues_id"`
+	TeamIDs     []primitive.ObjectID `bson:"team,omitempty" json:"teams_id"`
 }
