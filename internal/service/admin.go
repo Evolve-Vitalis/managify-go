@@ -108,3 +108,34 @@ func (s *UserService) DeleteUserById(id string) (*mongo.DeleteResult, error) {
 	log.Infof("user deleted successfully: %s", id)
 	return res, nil
 }
+
+func (s *ProjectService) GetAllProjects() ([]models.Project, error) {
+
+	var log = logrus.New()
+	log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+		ForceColors:   true,
+	})
+
+	collection := database.DB.Collection(s.Collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cursor, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var projects []models.Project
+
+	if err := cursor.All(ctx, &projects); err != nil {
+		return nil, err
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return projects, nil
+}
