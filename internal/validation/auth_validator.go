@@ -19,6 +19,7 @@ func AuthValidator(c *fiber.Ctx) error {
 	log := logrus.New()
 	log.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
+		ForceColors:   true,
 	})
 	log.SetLevel(logrus.InfoLevel)
 
