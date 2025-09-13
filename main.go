@@ -4,6 +4,7 @@ import (
 	"managify/database"
 	"managify/internal/middleware"
 	"managify/internal/router"
+	"os"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -22,7 +23,7 @@ func main() {
 	}
 
 	app := fiber.New()
-	router.Router(app)
-	app.Listen(":8080")
+	router.Routers(app)
+	app.Listen(os.Getenv("PORT"))
 
 }
