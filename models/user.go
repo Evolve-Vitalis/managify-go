@@ -8,7 +8,7 @@ type User struct {
 	ID             primitive.ObjectID   `bson:"_id,omitempty" json:"id"`
 	FullName       string               `bson:"full_name" json:"full_name"`
 	Email          string               `bson:"email" json:"email"`
-	Password       string               `bson:"password" json:"-"`
+	Password       string               `bson:"password" json:"password"`
 	AssignedIssues []primitive.ObjectID `bson:"assigned_issues,omitempty" json:"-"`
 	ProjectSize    int                  `bson:"project_size" json:"project_size"`
 	Subscriptions  []primitive.ObjectID `bson:"subscriptions,omitempty" json:"-"`
