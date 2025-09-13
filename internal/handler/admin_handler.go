@@ -19,3 +19,48 @@ func GetUsersHandler(c *fiber.Ctx) error {
 		"data":    users,
 	})
 }
+
+func GetUserById(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	if id == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Failed to fetch id",
+		})
+	}
+
+	user, err := service.GetUserService().GetUserById(id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Status internal server error",
+			"error":   err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
+		"message": "Success",
+		"user":    user,
+	})
+}
+
+func DeleteUserById(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	if id == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Failed to fetch id",
+		})
+	}
+	res, err := service.GetUserService().DeleteUserById(id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Status internal server error",
+			"error":   err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
+		"message": "Success",
+		"user":    res,
+	})
+}
