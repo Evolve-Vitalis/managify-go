@@ -34,6 +34,7 @@ func CreateToken(user *models.User) (string, error) {
 		return "", err
 	}
 
+	log.Infof("Generated JWT: %s", tokenString)
 	return tokenString, nil
 
 }
