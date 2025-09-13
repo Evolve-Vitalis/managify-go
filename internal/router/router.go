@@ -38,6 +38,7 @@ func RouterProject(app *fiber.App) {
 
 	api.Post(routes.ProjectCreate, handler.CreateProjectHandler)
 	api.Delete(routes.ProjectDelete, handler.DeleteProjectHandler)
+	api.Get(routes.ProjectGet, handler.GetProjectHandler)
 }
 
 func RouterInvite(app *fiber.App) {

@@ -19,6 +19,14 @@ type ProjectService struct {
 
 var projectService *ProjectService
 
+func init() {
+	log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+		ForceColors:   true,
+	})
+	log.SetLevel(logrus.DebugLevel)
+}
+
 func GetProjectService() *ProjectService {
 	if projectService == nil {
 		projectService = &ProjectService{Collection: "projects"}
@@ -27,12 +35,6 @@ func GetProjectService() *ProjectService {
 }
 
 func (s *ProjectService) CreateProject(project *models.Project, user *models.User) (*models.Project, error) {
-	var log = logrus.New()
-	log.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp: true,
-		ForceColors:   true,
-	})
-
 	collection := database.DB.Collection(s.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -55,6 +57,8 @@ func (s *ProjectService) CreateProject(project *models.Project, user *models.Use
 }
 
 func (s *ProjectService) DeleteProjectById(objID primitive.ObjectID, user *models.User) error {
+	log.Debugf("DeleteProjectById called with objID=%s, userID=%s", objID.Hex(), user.ID.Hex())
+
 	collection := database.DB.Collection(s.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -63,20 +67,32 @@ func (s *ProjectService) DeleteProjectById(objID primitive.ObjectID, user *model
 	err := collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&project)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
+			log.Warnf("Project not found: %s", objID.Hex())
 			return fmt.Errorf("project not found")
 		}
+		log.WithError(err).Error("Error finding project")
 		return err
 	}
+	log.Debugf("Project found: %+v", project)
 
 	if !user.IsAdmin && project.OwnerID != user.ID {
+		log.Warnf("Unauthorized delete attempt by user %s on project %s", user.ID.Hex(), objID.Hex())
 		return fmt.Errorf("unauthorized: only owner or admin can delete")
 	}
 
-	_, err = collection.DeleteOne(ctx, bson.M{"_id": objID})
-	return err
+	res, err := collection.DeleteOne(ctx, bson.M{"_id": objID})
+	if err != nil {
+		log.WithError(err).Error("Failed to delete project")
+		return err
+	}
+
+	log.Infof("Project deleted successfully: %s, deletedCount=%d", objID.Hex(), res.DeletedCount)
+	return nil
 }
 
 func increaseProjectSize(ownerID primitive.ObjectID) error {
+	log.Debugf("increaseProjectSize called for ownerID=%s", ownerID.Hex())
+
 	us := GetUserService()
 	collection := database.DB.Collection(us.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -88,12 +104,43 @@ func increaseProjectSize(ownerID primitive.ObjectID) error {
 
 	res, err := collection.UpdateOne(ctx, bson.M{"_id": ownerID}, update)
 	if err != nil {
+		log.WithError(err).Error("Failed to update project_size")
 		return fmt.Errorf("failed to update project size: %v", err)
 	}
 
 	if res.MatchedCount == 0 {
+		log.Warnf("User not found while increasing project size: %s", ownerID.Hex())
 		return fmt.Errorf("user not found")
 	}
 
+	log.Infof("Project size increased for user %s, matchedCount=%d, modifiedCount=%d", ownerID.Hex(), res.MatchedCount, res.ModifiedCount)
 	return nil
+}
+
+func (s *ProjectService) GetProject(projectID primitive.ObjectID, user *models.User) (*models.Project, error) {
+
+	collection := database.DB.Collection(s.Collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var project models.Project
+	err := collection.FindOne(ctx, bson.M{
+		"_id": projectID,
+		"$or": []bson.M{
+			{"owner_id": user.ID},
+			{"team": user.ID},
+		},
+	}).Decode(&project)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			log.Warnf("project not found or access denied for user %s", user.ID.Hex())
+			return nil, fmt.Errorf("project not found or access denied")
+		}
+		log.WithError(err).Error("failed to fetch project")
+		return nil, err
+	}
+
+	log.Infof("project fetched successfully: %s by user %s", projectID.Hex(), user.ID.Hex())
+	return &project, nil
 }

@@ -24,6 +24,13 @@ type UserService struct {
 
 var userService *UserService
 
+func init() {
+	log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+		ForceColors:   true,
+	})
+	log.SetLevel(logrus.DebugLevel)
+}
 func GetUserService() *UserService {
 	if userService == nil {
 		userService = &UserService{Collection: "users"}
@@ -32,11 +39,7 @@ func GetUserService() *UserService {
 }
 
 func (s *UserService) CreateUser(user *models.User) (*models.User, string, error) {
-	var log = logrus.New()
-	log.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp: true,
-		ForceColors:   true,
-	})
+
 	log.Infof("Attempting to create user: %s", user.Email)
 
 	collection := database.DB.Collection(s.Collection)
@@ -70,11 +73,6 @@ func (s *UserService) CreateUser(user *models.User) (*models.User, string, error
 }
 
 func (s *UserService) Login(req *request.UserLoginRequest) (*response.UserLoginResponse, error) {
-	log := logrus.New()
-	log.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp: true,
-		ForceColors:   true,
-	})
 	log.Infof("Attempting login for email: %s", req.Email)
 
 	collection := database.DB.Collection(s.Collection)

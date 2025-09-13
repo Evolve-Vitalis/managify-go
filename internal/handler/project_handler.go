@@ -70,3 +70,27 @@ func DeleteProjectHandler(c *fiber.Ctx) error {
 		"message": "Project deleted successfully",
 	})
 }
+
+func GetProjectHandler(c *fiber.Ctx) error {
+	projectIDHex := c.Params("id")
+	projectID, err := primitive.ObjectIDFromHex(projectIDHex)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid project ID"})
+	}
+
+	userVal := c.Locals("user")
+	user, ok := userVal.(*models.User)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "invalid token"})
+	}
+
+	project, err := service.GetProjectService().GetProject(projectID, user)
+	if err != nil {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "project fetched successfully",
+		"project": project,
+	})
+}

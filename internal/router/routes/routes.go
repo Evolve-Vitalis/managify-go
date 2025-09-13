@@ -18,6 +18,7 @@ const (
 	ProjectBase   = "/project"
 	ProjectCreate = "/create-project"
 	ProjectDelete = "/delete-project/:id"
+	ProjectGet    = "/projects/:id"
 
 	// Project invite endpoints
 
