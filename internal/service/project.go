@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type ProjectService struct {
@@ -51,6 +52,28 @@ func (s *ProjectService) CreateProject(project *models.Project, user *models.Use
 	}
 
 	return project, nil
+}
+
+func (s *ProjectService) DeleteProjectById(objID primitive.ObjectID, user *models.User) error {
+	collection := database.DB.Collection(s.Collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var project models.Project
+	err := collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&project)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return fmt.Errorf("project not found")
+		}
+		return err
+	}
+
+	if !user.IsAdmin && project.OwnerID != user.ID {
+		return fmt.Errorf("unauthorized: only owner or admin can delete")
+	}
+
+	_, err = collection.DeleteOne(ctx, bson.M{"_id": objID})
+	return err
 }
 
 func increaseProjectSize(ownerID primitive.ObjectID) error {
