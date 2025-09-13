@@ -64,3 +64,18 @@ func DeleteUserById(c *fiber.Ctx) error {
 		"user":    res,
 	})
 }
+
+func GetProjectsHandler(c *fiber.Ctx) error {
+	projects, err := service.GetProjectService().GetAllProjects()
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to fetch users",
+			"error":   err.Error(),
+		})
+	}
+	return c.JSON(fiber.Map{
+		"message": "Success",
+		"data":    projects,
+	})
+}
