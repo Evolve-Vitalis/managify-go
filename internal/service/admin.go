@@ -8,6 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func (s *UserService) GetAllUsers() ([]models.User, error) {
@@ -20,7 +21,10 @@ func (s *UserService) GetAllUsers() ([]models.User, error) {
 	collection := database.DB.Collection(s.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	cursor, err := collection.Find(ctx, bson.M{})
+
+	opts := options.Find().SetLimit(100).SetProjection(bson.M{"password": 0})
+
+	cursor, err := collection.Find(ctx, bson.M{}, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -28,12 +32,8 @@ func (s *UserService) GetAllUsers() ([]models.User, error) {
 
 	var users []models.User
 
-	for cursor.Next(ctx) {
-		var user models.User
-		if err := cursor.Decode(&user); err != nil {
-			return nil, err
-		}
-		users = append(users, user)
+	if err := cursor.All(ctx, &users); err != nil {
+		return nil, err
 	}
 
 	if err := cursor.Err(); err != nil {
