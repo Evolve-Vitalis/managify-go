@@ -3,7 +3,9 @@ package main
 import (
 	"managify/database"
 	"managify/internal/middleware"
+	"managify/internal/router"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 )
@@ -18,5 +20,9 @@ func main() {
 	if err := database.Connect(); err != nil {
 		logrus.Infoln("Database connection failed: ", err)
 	}
+
+	app := fiber.New()
+	router.Router(app)
+	app.Listen(":8080")
 
 }
