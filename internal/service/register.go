@@ -22,8 +22,13 @@ type UserService struct {
 	Collection string
 }
 
-func NewUserService() *UserService {
-	return &UserService{Collection: "users"}
+var userService *UserService
+
+func GetUserService() *UserService {
+	if userService == nil {
+		userService = &UserService{Collection: "users"}
+	}
+	return userService
 }
 
 func (s *UserService) CreateUser(user *models.User) (*models.User, string, error) {
@@ -34,17 +39,6 @@ func (s *UserService) CreateUser(user *models.User) (*models.User, string, error
 	collection := database.DB.Collection(s.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
-	count, err := collection.CountDocuments(ctx, bson.M{"email": user.Email})
-	if err != nil {
-		log.Errorf("Failed to count documents: %v", err)
-		return nil, "", err
-	}
-
-	if count > 0 {
-		log.Warnf("Email already exists: %s", user.Email)
-		return nil, "", err
-	}
 
 	hashedPassword, err := encryptPassword([]byte(user.Password))
 	if err != nil {
