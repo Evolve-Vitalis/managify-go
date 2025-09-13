@@ -24,15 +24,16 @@ func RouterUser(app *fiber.App) {
 }
 
 func RouterAdmin(app *fiber.App) {
-	api := app.Group(routes.AdminBase)
+	api := app.Group(routes.AdminBase, middleware.AuthMiddleware, middleware.AdminMiddleware)
 
-	api.Get(routes.AdminGetUsers, middleware.AuthMiddleware, middleware.AdminMiddleware, handler.GetUsersHandler)
-	api.Get(routes.AdminGetUser, middleware.AuthMiddleware, middleware.AdminMiddleware, handler.GetUserById)
-	api.Delete(routes.AdminDelete, middleware.AuthMiddleware, middleware.AdminMiddleware, handler.DeleteUserById)
+	api.Get(routes.AdminGetUsers, handler.GetUsersHandler)
+	api.Get(routes.AdminGetUser, handler.GetUserById)
+	api.Delete(routes.AdminDelete, handler.DeleteUserById)
 }
 
 func RouterProject(app *fiber.App) {
-	api := app.Group(routes.ProjectBase)
+	api := app.Group(routes.ProjectBase, middleware.AuthMiddleware)
 
-	api.Post(routes.ProjectCreate, middleware.AuthMiddleware, handler.CreateProjectHandler)
+	api.Post(routes.ProjectCreate, handler.CreateProjectHandler)
+	api.Delete(routes.ProjectDelete, handler.DeleteProjectHandler)
 }
