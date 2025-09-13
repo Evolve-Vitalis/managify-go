@@ -17,7 +17,15 @@ func CreateProjectHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	res, err := service.GetProjectService().CreateProject(&project)
+	userVal := c.Locals("user")
+	user, ok := userVal.(*models.User)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Invalid token",
+		})
+	}
+
+	res, err := service.GetProjectService().CreateProject(&project, user)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"message": "Invalid project",

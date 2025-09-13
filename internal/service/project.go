@@ -25,7 +25,7 @@ func GetProjectService() *ProjectService {
 	return projectService
 }
 
-func (s *ProjectService) CreateProject(project *models.Project) (*models.Project, error) {
+func (s *ProjectService) CreateProject(project *models.Project, user *models.User) (*models.Project, error) {
 	var log = logrus.New()
 	log.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
@@ -37,6 +37,7 @@ func (s *ProjectService) CreateProject(project *models.Project) (*models.Project
 	defer cancel()
 
 	project.ID = primitive.NewObjectID()
+	project.OwnerID = user.ID
 
 	_, err := collection.InsertOne(ctx, project)
 	if err != nil {
@@ -51,6 +52,7 @@ func (s *ProjectService) CreateProject(project *models.Project) (*models.Project
 
 	return project, nil
 }
+
 func increaseProjectSize(ownerID primitive.ObjectID) error {
 	us := GetUserService()
 	collection := database.DB.Collection(us.Collection)
