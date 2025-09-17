@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type RoleService struct {
@@ -87,4 +88,26 @@ func (s *RoleService) DeleteRole(deleteId primitive.ObjectID) error {
 	}
 
 	return nil
+}
+
+func (s *RoleService) IsOwner(userId, projectId primitive.ObjectID) (bool, error) {
+	collection := database.DB.Collection(s.Collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var role models.Role
+	err := collection.FindOne(ctx, bson.M{
+		"user_id":    userId,
+		"project_id": projectId,
+		"role":       "owner",
+	}).Decode(&role)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
 }
