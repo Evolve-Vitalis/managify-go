@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"managify/constant"
 	"managify/models"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,20 +12,20 @@ func AdminMiddleware(c *fiber.Ctx) error {
 	userVal := c.Locals("user")
 	if userVal == nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "Unauthorized",
+			"message": constant.ErrUnauthorized,
 		})
 	}
 
 	user, ok := userVal.(*models.User)
 	if !ok {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "User type assertion failed",
+			"message": constant.ErrInternalServer,
 		})
 	}
 
 	if !user.IsAdmin {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"message": "You are not allowed to access this resource",
+			"message": constant.ErrForbidden,
 		})
 	}
 

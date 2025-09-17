@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"managify/constant"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -12,7 +13,7 @@ func AuthMiddleware(c *fiber.Ctx) error {
 	authHeader := c.Get("Authorization")
 	if authHeader == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "Missing Authorization header",
+			"message": constant.ErrUnauthorized,
 		})
 	}
 
@@ -20,7 +21,7 @@ func AuthMiddleware(c *fiber.Ctx) error {
 	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 	if tokenStr == authHeader {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "Invalid Authorization header format",
+			"message": constant.ErrUnauthorized,
 		})
 	}
 
@@ -33,21 +34,21 @@ func AuthMiddleware(c *fiber.Ctx) error {
 	})
 	if err != nil || !token.Valid {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "Invalid token",
+			"message": constant.ErrUnauthorized,
 		})
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "Invalid token claims",
+			"message": constant.ErrUnauthorized,
 		})
 	}
 
 	user, err := ExtractUserFromClaims(claims)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "Failed to extract user from token",
+			"message": constant.ErrUnauthorized,
 		})
 	}
 
