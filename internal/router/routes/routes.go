@@ -14,6 +14,7 @@ const (
 	AdminGetUser     = "/get-user/:id"
 	AdminDelete      = "/delete-user/:id"
 	AdminGetProjects = "/get-projects"
+	AdminGetRoles    = "/get-roles"
 
 	// Project endpoints
 
@@ -27,4 +28,8 @@ const (
 	InviteBase    = version + "/invite"
 	InviteCreate  = "/project-invite"
 	InviteRespond = "/project-invite/:inviteId/respond"
+
+	RoleBase   = version + "/role"
+	RoleCreate = "/create-role"
+	RoleDelete = "/delete-project/:id"
 )
