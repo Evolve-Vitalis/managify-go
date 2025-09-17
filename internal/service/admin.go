@@ -23,7 +23,6 @@ func init() {
 }
 
 func (s *UserService) GetAllUsers() ([]models.User, error) {
-	log.Debug("GetAllUsers called")
 
 	collection := database.DB.Collection(s.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
