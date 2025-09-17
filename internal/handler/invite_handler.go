@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"managify/constant"
 	"managify/dto/request"
 	"managify/internal/service"
 	"managify/models"
@@ -14,7 +15,7 @@ func CreateProjectInviteHandler(c *fiber.Ctx) error {
 	var req request.ProjectInviteRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Invalid request body",
+			"message": constant.ErrBadRequest,
 			"error":   err.Error(),
 		})
 	}
@@ -23,19 +24,19 @@ func CreateProjectInviteHandler(c *fiber.Ctx) error {
 	sender, ok := userVal.(*models.User)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "Invalid token",
+			"message": constant.ErrUnauthorized,
 		})
 	}
 
 	invite, err := service.CreateProjectInvite(sender.ID, req)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": err.Error(),
+			"message": constant.ErrBadRequest,
 		})
 	}
 
 	return c.JSON(fiber.Map{
-		"message": "Invite created",
+		"message": constant.SuccessCreated,
 		"invite":  invite,
 	})
 }
@@ -44,13 +45,15 @@ func RespondProjectInviteHandler(c *fiber.Ctx) error {
 	inviteIDHex := c.Params("inviteId")
 	inviteID, err := primitive.ObjectIDFromHex(inviteIDHex)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid invite ID"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": constant.ErrBadRequest,
+		})
 	}
 
 	userVal := c.Locals("user")
 	user, ok := userVal.(*models.User)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid token"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": constant.ErrUnauthorized})
 	}
 
 	action := c.Query("action")
@@ -58,16 +61,16 @@ func RespondProjectInviteHandler(c *fiber.Ctx) error {
 	if action == "accept" {
 		accept = true
 	} else if action != "decline" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid action"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": constant.ErrBadRequest})
 	}
 
 	invite, err := service.RespondProjectInvite(user.ID, inviteID, accept)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": constant.ErrBadRequest})
 	}
 
 	return c.JSON(fiber.Map{
-		"message": "Invite updated",
+		"message": constant.SuccessUpdated,
 		"invite":  invite,
 	})
 }

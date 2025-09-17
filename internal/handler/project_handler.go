@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"managify/constant"
 	"managify/internal/service"
 	"managify/models"
 
@@ -13,7 +14,7 @@ func CreateProjectHandler(c *fiber.Ctx) error {
 
 	if err := c.BodyParser(&project); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Invalid request body",
+			"message": constant.ErrBadRequest,
 			"error":   err.Error(),
 		})
 	}
@@ -22,20 +23,20 @@ func CreateProjectHandler(c *fiber.Ctx) error {
 	user, ok := userVal.(*models.User)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "Invalid token",
+			"message": constant.ErrUnauthorized,
 		})
 	}
 
 	res, err := service.GetProjectService().CreateProject(&project, user)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "Invalid project",
+			"message": constant.ErrUnauthorized,
 			"error":   err.Error(),
 		})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": "Project created successfully",
+		"message": constant.SuccessCreated,
 		"project": res,
 	})
 
@@ -46,7 +47,7 @@ func DeleteProjectHandler(c *fiber.Ctx) error {
 	user, ok := userVal.(*models.User)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "Invalid token",
+			"message": constant.ErrUnauthorized,
 		})
 	}
 
@@ -54,7 +55,7 @@ func DeleteProjectHandler(c *fiber.Ctx) error {
 	objID, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Invalid project ID",
+			"message": constant.ErrBadRequest,
 			"error":   err.Error(),
 		})
 	}
@@ -62,12 +63,12 @@ func DeleteProjectHandler(c *fiber.Ctx) error {
 	err = service.GetProjectService().DeleteProjectById(objID, user)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": err.Error(),
+			"message": constant.ErrUnauthorized,
 		})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": "Project deleted successfully",
+		"message": constant.SuccessDeleted,
 	})
 }
 
@@ -75,22 +76,22 @@ func GetProjectHandler(c *fiber.Ctx) error {
 	projectIDHex := c.Params("id")
 	projectID, err := primitive.ObjectIDFromHex(projectIDHex)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid project ID"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": constant.ErrBadRequest})
 	}
 
 	userVal := c.Locals("user")
 	user, ok := userVal.(*models.User)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "invalid token"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": constant.ErrUnauthorized})
 	}
 
 	project, err := service.GetProjectService().GetProject(projectID, user)
 	if err != nil {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": err.Error()})
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": constant.ErrForbidden})
 	}
 
 	return c.JSON(fiber.Map{
-		"message": "project fetched successfully",
+		"message": constant.SuccessFetched,
 		"project": project,
 	})
 }

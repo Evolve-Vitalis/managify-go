@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"managify/constant"
 	"managify/internal/service"
 
 	"github.com/gofiber/fiber/v2"
@@ -10,12 +11,12 @@ func GetUsersHandler(c *fiber.Ctx) error {
 	users, err := service.GetUserService().GetAllUsers()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to fetch users",
+			"message": constant.ErrInternalServer,
 			"error":   err.Error(),
 		})
 	}
 	return c.JSON(fiber.Map{
-		"message": "Success",
+		"message": constant.SuccessCreated,
 		"data":    users,
 	})
 }
@@ -25,20 +26,20 @@ func GetUserById(c *fiber.Ctx) error {
 
 	if id == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Failed to fetch id",
+			"message": constant.ErrNotFound,
 		})
 	}
 
 	user, err := service.GetUserService().GetUserById(id)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Status internal server error",
+			"message": constant.ErrInternalServer,
 			"error":   err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
-		"message": "Success",
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": constant.SuccessOperation,
 		"user":    user,
 	})
 }
@@ -48,19 +49,19 @@ func DeleteUserById(c *fiber.Ctx) error {
 
 	if id == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Failed to fetch id",
+			"message": constant.ErrBadRequest,
 		})
 	}
 	res, err := service.GetUserService().DeleteUserById(id)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Status internal server error",
+			"message": constant.ErrInternalServer,
 			"error":   err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
-		"message": "Success",
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": constant.SuccessUpdated,
 		"user":    res,
 	})
 }
@@ -69,13 +70,13 @@ func GetProjectsHandler(c *fiber.Ctx) error {
 	projects, err := service.GetProjectService().GetAllProjects()
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to fetch users",
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": constant.ErrBadRequest,
 			"error":   err.Error(),
 		})
 	}
 	return c.JSON(fiber.Map{
-		"message": "Success",
+		"message": constant.SuccessOperation,
 		"data":    projects,
 	})
 }
