@@ -5,8 +5,8 @@ const (
 
 	// User endpoints
 	UserBase     = version + "/users"
-	UserRegister = version + "/register"
-	UserAuth     = version + "/auth"
+	UserRegister = "/register"
+	UserAuth     = "/auth"
 
 	// Admin endpoints
 	AdminBase        = version + "/admin"
