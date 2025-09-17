@@ -1,0 +1,97 @@
+package service
+
+import (
+	"context"
+	"fmt"
+	"managify/database"
+	"managify/models"
+	"time"
+
+	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+type StatusService struct {
+	Collection string
+}
+
+var statusService *StatusService
+
+func init() {
+	log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+		ForceColors:   true,
+	})
+	log.SetLevel(logrus.DebugLevel)
+}
+
+func GetStatusService() *StatusService {
+	if statusService == nil {
+		statusService = &StatusService{Collection: "status"}
+	}
+	return statusService
+}
+
+func (s *StatusService) CreateStatus(status *models.Status) (*models.Status, error) {
+	ps := GetProjectService()
+
+	projectValid, err := ps.IsProjectValid(status.ProjectID)
+	if err != nil || !projectValid {
+		return nil, err
+	}
+
+	exists, err := ps.IsUserInProject(status.CreatorID, status.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, fmt.Errorf("user is not part of the project")
+	}
+
+	collection := database.DB.Collection(s.Collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	status.CreatedAt = time.Now()
+	status.UpdatedAt = time.Now()
+
+	res, err := collection.InsertOne(ctx, status)
+	if err != nil {
+		log.WithError(err).Error("failed to insert status")
+		return nil, err
+	}
+
+	if oid, ok := res.InsertedID.(primitive.ObjectID); ok {
+		status.ID = oid
+	}
+
+	return status, nil
+}
+
+func (s *StatusService) DeleteStatus(deleteId primitive.ObjectID, projectId primitive.ObjectID, userId primitive.ObjectID) error {
+	ps := GetProjectService()
+	collection := database.DB.Collection(s.Collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	exists, err := ps.IsUserInProject(userId, projectId)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("user is not part of the project")
+	}
+
+	res, err := collection.DeleteOne(ctx, bson.M{"_id": deleteId})
+	if err != nil {
+		log.WithError(err).Error("failed to delete status")
+		return err
+	}
+
+	if res.DeletedCount == 0 {
+		return fmt.Errorf("status not found")
+	}
+
+	return nil
+}
