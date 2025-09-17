@@ -11,6 +11,6 @@ type Issue struct {
 	Priority    string               `bson:"priority" json:"priority"`
 	DueDate     string               `bson:"due_date,omitempty" json:"due_date"`
 	Tags        []string             `bson:"tags,omitempty" json:"tags"`
-	AssignedID  primitive.ObjectID   `bson:"assigned_id,omitempty" json:"-"`
+	AssignedID  primitive.ObjectID   `bson:"assigned_id,omitempty" json:"assigned_id"`
 	CommentIDs  []primitive.ObjectID `bson:"comments,omitempty" json:"-"`
 }
