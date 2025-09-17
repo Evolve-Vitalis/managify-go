@@ -138,3 +138,31 @@ func (s *ProjectService) GetAllProjects() ([]models.Project, error) {
 	log.Infof("GetAllProjects succeeded, retrieved %d projects", len(projects))
 	return projects, nil
 }
+
+func (s *RoleService) GetAllRoles() ([]models.Role, error) {
+	log.Debug("GetAllRoles called")
+
+	collection := database.DB.Collection(s.Collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cursor, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		log.WithError(err).Error("Failed to find roles")
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var roles []models.Role
+	if err := cursor.All(ctx, &roles); err != nil {
+		log.WithError(err).Error("Failed to decode projects from cursor")
+		return nil, err
+	}
+	if err := cursor.Err(); err != nil {
+		log.WithError(err).Error("Cursor error after fetching projects")
+		return nil, err
+	}
+
+	log.Infof("GetAllRoles succeeded, retrieved %d roles", len(roles))
+	return roles, nil
+}
