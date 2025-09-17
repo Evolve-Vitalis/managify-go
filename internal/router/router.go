@@ -15,6 +15,7 @@ func Routers(app *fiber.App) {
 	RouterAdmin(app)
 	RouterProject(app)
 	RouterInvite(app)
+	RouterRole(app)
 }
 
 func RouterUser(app *fiber.App) {
@@ -30,6 +31,7 @@ func RouterAdmin(app *fiber.App) {
 	api.Get(routes.AdminGetUsers, handler.GetUsersHandler)
 	api.Get(routes.AdminGetUser, handler.GetUserById)
 	api.Get(routes.AdminGetProjects, handler.GetProjectsHandler)
+	api.Get(routes.AdminGetRoles, handler.GetRolesHandler)
 	api.Delete(routes.AdminDelete, handler.DeleteUserById)
 }
 
@@ -46,4 +48,11 @@ func RouterInvite(app *fiber.App) {
 
 	api.Post(routes.InviteCreate, handler.CreateProjectInviteHandler)
 	api.Post(routes.InviteRespond, handler.RespondProjectInviteHandler)
+}
+
+func RouterRole(app *fiber.App) {
+	api := app.Group(routes.RoleBase, middleware.AuthMiddleware)
+
+	api.Post(routes.RoleCreate, handler.CreateRoleHandler)
+	api.Delete(routes.RoleDelete, handler.DeleteRoleHandler)
 }
