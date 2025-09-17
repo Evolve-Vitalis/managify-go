@@ -108,6 +108,25 @@ func (s *UserService) Login(req *request.UserLoginRequest) (*response.UserLoginR
 	return resp, nil
 }
 
+func (s *UserService) IsUserValid(userId primitive.ObjectID) (bool, error) {
+
+	fmt.Printf("user Id in IsUserValid %v", userId)
+	collection := database.DB.Collection(s.Collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var user models.User
+
+	err := collection.FindOne(ctx, bson.M{
+		"_id": userId,
+	}).Decode(&user)
+
+	if err != nil {
+		log.WithError(err).Error("failed to fetch user")
+		return false, err
+	}
+	return true, nil
+}
+
 func encryptPassword(givenPassword []byte) (password []byte, error error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword(givenPassword, bcrypt.DefaultCost)
 	if err != nil {
