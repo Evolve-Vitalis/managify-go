@@ -144,3 +144,41 @@ func (s *ProjectService) GetProject(projectID primitive.ObjectID, user *models.U
 	log.Infof("project fetched successfully: %s by user %s", projectID.Hex(), user.ID.Hex())
 	return &project, nil
 }
+
+func (s *ProjectService) IsProjectValid(projectID primitive.ObjectID) (bool, error) {
+	collection := database.DB.Collection(s.Collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var project models.Project
+	err := collection.FindOne(ctx, bson.M{"_id": projectID}).Decode(&project)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch project")
+		return false, err
+	}
+
+	return true, nil
+
+}
+
+func (s *ProjectService) IsUserInProject(userID, projectID primitive.ObjectID) (bool, error) {
+	collection := database.DB.Collection(s.Collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{
+		"_id": projectID,
+		"$or": []bson.M{
+			{"owner_id": userID},
+			{"team": userID},
+		},
+	}
+
+	count, err := collection.CountDocuments(ctx, filter)
+	if err != nil {
+		log.WithError(err).Error("failed to check if user is in project")
+		return false, err
+	}
+
+	return count > 0, nil
+}
