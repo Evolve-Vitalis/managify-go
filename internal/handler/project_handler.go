@@ -37,7 +37,7 @@ func CreateProjectHandler(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": constant.SuccessCreated,
-		"project": res,
+		"data":    res,
 	})
 
 }
@@ -92,6 +92,6 @@ func GetProjectHandler(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": constant.SuccessFetched,
-		"project": project,
+		"data":    project,
 	})
 }
