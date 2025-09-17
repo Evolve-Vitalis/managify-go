@@ -40,7 +40,7 @@ func GetUserById(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": constant.SuccessOperation,
-		"user":    user,
+		"data":    user,
 	})
 }
 
@@ -62,7 +62,7 @@ func DeleteUserById(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": constant.SuccessUpdated,
-		"user":    res,
+		"data":    res,
 	})
 }
 
@@ -78,5 +78,20 @@ func GetProjectsHandler(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message": constant.SuccessOperation,
 		"data":    projects,
+	})
+}
+
+func GetRolesHandler(c *fiber.Ctx) error {
+	roles, err := service.GetRoleService().GetAllRoles()
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": constant.ErrBadRequest,
+			"error":   err.Error(),
+		})
+	}
+	return c.JSON(fiber.Map{
+		"message": constant.SuccessOperation,
+		"data":    roles,
 	})
 }
