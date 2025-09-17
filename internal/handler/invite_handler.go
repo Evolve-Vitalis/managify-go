@@ -5,6 +5,7 @@ import (
 	"managify/dto/request"
 	"managify/internal/service"
 	"managify/models"
+	"managify/utils"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -16,19 +17,17 @@ func CreateProjectInviteHandler(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": constant.ErrBadRequest,
-			"error":   err.Error(),
 		})
 	}
 
-	userVal := c.Locals("user")
-	sender, ok := userVal.(*models.User)
+	user, ok := utils.GetUserLocal(c)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": constant.ErrUnauthorized,
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": constant.ErrInternalServer,
 		})
 	}
 
-	invite, err := service.CreateProjectInvite(sender.ID, req)
+	invite, err := service.CreateProjectInvite(user.ID, req)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": constant.ErrBadRequest,

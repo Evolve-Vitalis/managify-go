@@ -10,18 +10,15 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func CreateRoleHandler(c *fiber.Ctx) error {
-	var role models.Role
+func CreateStatusHandler(c *fiber.Ctx) error {
+	var status models.Status
 
-	if err := c.BodyParser(&role); err != nil {
+	if err := c.BodyParser(&status); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": constant.ErrBadRequest,
+			"error":   err.Error(),
 		})
 	}
-
-	roleUserID := role.UserID
-	roleProjectID := role.ProjectID
-	RoleName := role.RoleName
 
 	user, ok := utils.GetUserLocal(c)
 	if !ok {
@@ -30,22 +27,13 @@ func CreateRoleHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	isOwner, err := service.GetRoleService().IsOwner(user.ID, roleProjectID)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": constant.ErrInternalServer,
-		})
-	}
-	if !isOwner {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"message": constant.ErrForbidden,
-		})
-	}
+	status.CreatorID = user.ID
 
-	res, err := service.GetRoleService().AddRole(roleUserID, roleProjectID, RoleName)
+	res, err := service.GetStatusService().CreateStatus(&status)
+
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": constant.ErrBadRequest,
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": constant.ErrUnauthorized,
 		})
 	}
 
@@ -55,24 +43,36 @@ func CreateRoleHandler(c *fiber.Ctx) error {
 	})
 }
 
-func DeleteRoleHandler(c *fiber.Ctx) error {
+func DeleteStatusHandler(c *fiber.Ctx) error {
 	idParam := c.Params("id")
+	projectParam := c.Params("project")
 	if idParam == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": constant.ErrBadRequest,
-			"error":   "missing id parameter",
 		})
 	}
 
-	roleID, err := primitive.ObjectIDFromHex(idParam)
+	statusID, err := primitive.ObjectIDFromHex(idParam)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": constant.ErrBadRequest,
-			"error":   "invalid id format",
+		})
+	}
+	projectID, err := primitive.ObjectIDFromHex(projectParam)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": constant.ErrBadRequest,
+		})
+	}
+	user, ok := utils.GetUserLocal(c) // User
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": constant.ErrInternalServer,
 		})
 	}
 
-	err = service.GetRoleService().DeleteRole(roleID)
+	err = service.GetStatusService().DeleteStatus(statusID, projectID, user.ID)
+
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": constant.ErrInternalServer,
