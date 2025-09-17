@@ -29,7 +29,15 @@ const (
 	InviteCreate  = "/project-invite"
 	InviteRespond = "/project-invite/:inviteId/respond"
 
+	// Project role endpoints
+
 	RoleBase   = version + "/role"
 	RoleCreate = "/create-role"
-	RoleDelete = "/delete-project/:id"
+	RoleDelete = "/delete-role/:id/:project"
+
+	// Project status endpoints
+
+	StatusBase   = version + "/status"
+	StatusCreate = "/create-status"
+	StatusDelete = "/delete-status/:id"
 )
