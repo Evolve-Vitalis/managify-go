@@ -19,7 +19,9 @@ import (
 )
 
 type UserService struct {
-	Collection string
+	Collection      string
+	EncryptPassword func([]byte) ([]byte, error)
+	CreateToken     func(*models.User) (string, error)
 }
 
 var userService *UserService
@@ -34,6 +36,8 @@ func init() {
 func GetUserService() *UserService {
 	if userService == nil {
 		userService = &UserService{Collection: "users"}
+		userService.CreateToken = middleware.CreateToken
+		userService.EncryptPassword = encryptPassword
 	}
 	return userService
 }
@@ -46,7 +50,7 @@ func (s *UserService) CreateUser(user *models.User) (*models.User, string, error
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	hashedPassword, err := encryptPassword([]byte(user.Password))
+	hashedPassword, err := s.EncryptPassword([]byte(user.Password))
 	if err != nil {
 		log.Errorf("Password encryption failed: %v", err)
 		return nil, "", err
@@ -60,7 +64,7 @@ func (s *UserService) CreateUser(user *models.User) (*models.User, string, error
 		return nil, "", err
 	}
 
-	tokenString, err := middleware.CreateToken(user)
+	tokenString, err := s.CreateToken(user)
 	if err != nil {
 		log.Errorf("Failed to create JWT token: %v", err)
 		return nil, "", err
@@ -92,7 +96,7 @@ func (s *UserService) Login(req *request.UserLoginRequest) (*response.UserLoginR
 		return nil, fmt.Errorf("invalid email or password")
 	}
 
-	tokenString, err := middleware.CreateToken(&user)
+	tokenString, err := s.CreateToken(&user)
 	if err != nil {
 		log.Errorf("Failed to create JWT token for user: %s, error: %v", req.Email, err)
 		return nil, fmt.Errorf("could not generate token")
