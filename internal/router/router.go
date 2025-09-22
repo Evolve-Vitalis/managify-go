@@ -61,5 +61,13 @@ func RouterRole(app *fiber.App) {
 func RouterStatus(app *fiber.App) {
 	api := app.Group(routes.StatusBase, middleware.AuthMiddleware)
 
-	api.Post(routes.StatusCreate, handler.CreateStatusHandler)
+	api.Post(routes.StatusCreate, validation.CreateStatusValidator, handler.CreateStatusHandler)
+	api.Delete(routes.StatusDelete, handler.DeleteStatusHandler)
+}
+
+func RouterIssue(app *fiber.App) {
+	api := app.Group(routes.IssueBase, middleware.AuthMiddleware)
+
+	api.Post(routes.IssueCreate, handler.CreateIssueHandler)
+	api.Delete(routes.IssueDelete, handler.DeleteIssueHandler)
 }
