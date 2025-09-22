@@ -40,4 +40,10 @@ const (
 	StatusBase   = version + "/status"
 	StatusCreate = "/create-status"
 	StatusDelete = "/delete-status/:id"
+
+	// Project issue endpoints
+
+	IssueBase   = version + "/issue"
+	IssueCreate = "/create-issue"
+	IssueDelete = "/delete-issue/:id"
 )
