@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
+
 	"managify/database"
+
 	"managify/models"
 	"time"
 
@@ -50,6 +52,19 @@ func (s *ProjectService) CreateProject(project *models.Project, user *models.Use
 
 	if err := increaseProjectSize(project.OwnerID); err != nil {
 		log.Errorf("Failed to increase project size: %v", err)
+		return nil, err
+	}
+
+	projectLogId := primitive.NewObjectID()
+	projectLog := models.ProjectLog{
+		ID:        projectLogId,
+		ProjectID: project.ID.Hex(),
+		UserID:    user.ID.Hex(),
+		Message:   "Project has been created",
+		Timestamp: time.Now(),
+	}
+
+	if err := GetLogService().CreateLog(&projectLog); err != nil {
 		return nil, err
 	}
 

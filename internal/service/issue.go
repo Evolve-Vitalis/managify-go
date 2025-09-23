@@ -71,6 +71,19 @@ func (s *IssueService) CreateIssue(issue *models.Issue, userID primitive.ObjectI
 		log.Errorf("Failed to insert issue into DB: %v", err)
 		return nil, err
 	}
+
+	projectLogId := primitive.NewObjectID()
+	projectLog := models.ProjectLog{
+		ID:        projectLogId,
+		ProjectID: issue.ProjectID.Hex(),
+		UserID:    userID.Hex(),
+		Message:   "Issue Has Been Created -> " + issue.Title,
+		Timestamp: time.Now(),
+	}
+	if err := GetLogService().CreateLog(&projectLog); err != nil {
+		return nil, err
+	}
+
 	return issue, nil
 }
 
@@ -101,6 +114,5 @@ func (s *IssueService) DeleteIssue(issueID, userID primitive.ObjectID) error {
 		log.Errorf("Failed to delete issue from DB: %v", err)
 		return err
 	}
-
 	return nil
 }

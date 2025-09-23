@@ -69,6 +69,17 @@ func (s *RoleService) AddRole(userId primitive.ObjectID, projectId primitive.Obj
 		return nil, err
 	}
 
+	projectLogId := primitive.NewObjectID()
+	projectLog := models.ProjectLog{
+		ID:        projectLogId,
+		ProjectID: role.ProjectID.Hex(),
+		UserID:    userId.Hex(),
+		Message:   "Role Has Been Assigned -> " + roleName,
+		Timestamp: time.Now(),
+	}
+	if err := GetLogService().CreateLog(&projectLog); err != nil {
+		return nil, err
+	}
 	return role, nil
 }
 
@@ -90,16 +101,15 @@ func (s *RoleService) DeleteRole(deleteId primitive.ObjectID) error {
 	return nil
 }
 
-func (s *RoleService) IsOwner(userId, projectId primitive.ObjectID) (bool, error) {
+func (s *ProjectService) IsOwner(ownerId, projectId primitive.ObjectID) (bool, error) {
 	collection := database.DB.Collection(s.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	var role models.Role
 	err := collection.FindOne(ctx, bson.M{
-		"user_id":    userId,
-		"project_id": projectId,
-		"role":       "owner",
+		"owner_id": ownerId,
+		"_id":      projectId,
 	}).Decode(&role)
 
 	if err != nil {

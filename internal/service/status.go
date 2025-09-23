@@ -66,6 +66,17 @@ func (s *StatusService) CreateStatus(status *models.Status) (*models.Status, err
 		status.ID = oid
 	}
 
+	projectLogId := primitive.NewObjectID()
+	projectLog := models.ProjectLog{
+		ID:        projectLogId,
+		ProjectID: status.ProjectID.Hex(),
+		UserID:    status.ID.Hex(),
+		Message:   "Status has been added -> " + status.Name,
+		Timestamp: time.Now(),
+	}
+	if err := GetLogService().CreateLog(&projectLog); err != nil {
+		return nil, err
+	}
 	return status, nil
 }
 

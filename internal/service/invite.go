@@ -70,6 +70,18 @@ func CreateProjectInvite(senderID primitive.ObjectID, req request.ProjectInviteR
 	invite.ID = res.InsertedID.(primitive.ObjectID)
 	log.Infof("Invite created successfully: %+v", invite)
 
+	projectLogId := primitive.NewObjectID()
+	projectLog := models.ProjectLog{
+		ID:        projectLogId,
+		ProjectID: req.ProjectID,
+		UserID:    senderID.Hex(),
+		Message:   "Invite has been set" + req.Email,
+		Timestamp: time.Now(),
+	}
+	if err := GetLogService().CreateLog(&projectLog); err != nil {
+		return nil, err
+	}
+
 	return invite, nil
 }
 
@@ -111,6 +123,17 @@ func RespondProjectInvite(userID, inviteID primitive.ObjectID, accept bool) (*mo
 		if err := addUserToProject(invite.ProjectID, userID); err != nil {
 			log.WithError(err).Errorf("Failed to add user to project: projectID=%s, userID=%s", invite.ProjectID.Hex(), userID.Hex())
 			return nil, fmt.Errorf("failed to add user to project: %v", err)
+		}
+		projectLogId := primitive.NewObjectID()
+		projectLog := models.ProjectLog{
+			ID:        projectLogId,
+			ProjectID: invite.ProjectID.Hex(),
+			UserID:    userID.Hex(),
+			Message:   "Invite has been accepted",
+			Timestamp: time.Now(),
+		}
+		if err := GetLogService().CreateLog(&projectLog); err != nil {
+			return nil, err
 		}
 		log.Infof("User %s added to project %s team", userID.Hex(), invite.ProjectID.Hex())
 	}
