@@ -17,6 +17,7 @@ func Routers(app *fiber.App) {
 	RouterInvite(app)
 	RouterRole(app)
 	RouterStatus(app)
+	RouterLogger(app)
 }
 
 func RouterUser(app *fiber.App) {
@@ -70,4 +71,10 @@ func RouterIssue(app *fiber.App) {
 
 	api.Post(routes.IssueCreate, handler.CreateIssueHandler)
 	api.Delete(routes.IssueDelete, handler.DeleteIssueHandler)
+}
+
+func RouterLogger(app *fiber.App) {
+	api := app.Group(routes.LoggerBase, middleware.AuthMiddleware)
+
+	api.Get(routes.LoggerGet, handler.GetLogsHandler)
 }

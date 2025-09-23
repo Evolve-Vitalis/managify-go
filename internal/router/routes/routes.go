@@ -46,4 +46,8 @@ const (
 	IssueBase   = version + "/issue"
 	IssueCreate = "/create-issue"
 	IssueDelete = "/delete-issue/:id"
+
+	// Log endpoint
+	LoggerBase = version + "/logger"
+	LoggerGet  = "/:projectId"
 )
