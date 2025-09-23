@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"fmt"
+
 	"managify/constant"
 	"managify/internal/service"
 	"managify/models"
@@ -30,7 +32,9 @@ func CreateRoleHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	isOwner, err := service.GetRoleService().IsOwner(user.ID, roleProjectID)
+	fmt.Println(user.ID)
+
+	isOwner, err := service.GetProjectService().IsOwner(user.ID, roleProjectID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": constant.ErrInternalServer,
@@ -39,6 +43,7 @@ func CreateRoleHandler(c *fiber.Ctx) error {
 	if !isOwner {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"message": constant.ErrForbidden,
+			"error":   "You are not owner",
 		})
 	}
 
