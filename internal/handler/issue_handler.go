@@ -55,7 +55,7 @@ func DeleteIssueHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	service.GetIssueService().DeleteIssue(objID, user.ID)
+	err = service.GetIssueService().DeleteIssue(objID, user.ID)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"message": constant.ErrUnauthorized,
