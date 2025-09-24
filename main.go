@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
@@ -27,6 +28,14 @@ func main() {
 	}
 
 	app := fiber.New()
+	host := os.Getenv("VUE_HOST")
+	allowMethods := "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS"
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     host,
+		AllowMethods:     allowMethods,
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowCredentials: true,
+	}))
 
 	apiLimiter(app)
 
