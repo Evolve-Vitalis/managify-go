@@ -7,6 +7,7 @@ const (
 	UserBase     = version + "/users"
 	UserRegister = "/register"
 	UserAuth     = "/auth"
+	UserGetById  = "/:id"
 
 	// Admin endpoints
 	AdminBase        = version + "/admin"

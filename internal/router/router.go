@@ -25,6 +25,7 @@ func RouterUser(app *fiber.App) {
 
 	api.Post(routes.UserRegister, validation.CreateRegisterValidator, handler.CreateRegisterHandler)
 	api.Post(routes.UserAuth, validation.AuthValidator, handler.LoginHandler)
+	api.Get(routes.UserGetById, middleware.AuthMiddleware, handler.GetUserByIdHandler)
 }
 
 func RouterAdmin(app *fiber.App) {
