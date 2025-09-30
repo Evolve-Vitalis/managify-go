@@ -197,3 +197,35 @@ func (s *ProjectService) IsUserInProject(userID, projectID primitive.ObjectID) (
 
 	return count > 0, nil
 }
+
+func (s *ProjectService) GetProjectsByUserId(userIDHex string) ([]*models.Project, error) {
+	userObjID, err := primitive.ObjectIDFromHex(userIDHex)
+	if err != nil {
+		return nil, err
+	}
+
+	collection := database.DB.Collection("projects")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cursor, err := collection.Find(ctx, bson.M{"owner_id": userObjID})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var projects []*models.Project
+	for cursor.Next(ctx) {
+		var project models.Project
+		if err := cursor.Decode(&project); err != nil {
+			return nil, err
+		}
+		projects = append(projects, &project)
+	}
+
+	if projects == nil {
+		projects = []*models.Project{}
+	}
+
+	return projects, nil
+}
