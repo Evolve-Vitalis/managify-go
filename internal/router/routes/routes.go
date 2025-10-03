@@ -40,13 +40,15 @@ const (
 
 	StatusBase   = version + "/status"
 	StatusCreate = "/create-status"
-	StatusDelete = "/delete-status/:id"
+	StatusDelete = "/delete-status/:id/:project"
 
 	// Project issue endpoints
 
 	IssueBase   = version + "/issue"
 	IssueCreate = "/create-issue"
 	IssueDelete = "/delete-issue/:id"
+	IssuesGet   = "/get/:statusID"
+	IssueUpdate = "/update-status/:issueID/:statusID"
 
 	// Log endpoint
 	LoggerBase = version + "/logger"
