@@ -12,6 +12,7 @@ import ProtectedRoute from "./content/ProtectedRoute";
 import PublicRoute from "./content/PublicRoute";
 
 import { Toaster } from "react-hot-toast";
+import ProjectDetail from "./components/project/DetailProject";
 
 const isElectron = window?.process?.versions?.electron;
 
@@ -29,6 +30,15 @@ export default function App() {
               <PublicRoute>
                 <Register />
               </PublicRoute>
+            }
+          />
+
+          <Route
+            path="/projects/:id"
+            element={
+              <ProtectedRoute>
+                <ProjectDetail />
+              </ProtectedRoute>
             }
           />
           <Route
