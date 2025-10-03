@@ -16,6 +16,7 @@ func Routers(app *fiber.App) {
 	RouterProject(app)
 	RouterInvite(app)
 	RouterRole(app)
+	RouterIssue(app)
 	RouterStatus(app)
 	RouterLogger(app)
 }
@@ -72,6 +73,8 @@ func RouterIssue(app *fiber.App) {
 
 	api.Post(routes.IssueCreate, handler.CreateIssueHandler)
 	api.Delete(routes.IssueDelete, handler.DeleteIssueHandler)
+	api.Get(routes.IssuesGet, handler.GetIssuesByStatusHandler)
+	api.Put(routes.IssueUpdate, handler.UpdateIssueStatusHandler)
 }
 
 func RouterLogger(app *fiber.App) {
