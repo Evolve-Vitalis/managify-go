@@ -121,3 +121,30 @@ func (s *StatusService) IsStatusInProject(statusID, projectID primitive.ObjectID
 
 	return count > 0, nil
 }
+
+func (s *StatusService) GetStatusesByProjectId(projectID primitive.ObjectID) ([]*models.Status, error) {
+	collection := database.DB.Collection(s.Collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cursor, err := collection.Find(ctx, bson.M{"project_id": projectID})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var statuses []*models.Status
+	for cursor.Next(ctx) {
+		var status models.Status
+		if err := cursor.Decode(&status); err != nil {
+			return nil, err
+		}
+		statuses = append(statuses, &status)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return statuses, nil
+}
