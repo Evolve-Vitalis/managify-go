@@ -9,7 +9,6 @@ type Project struct {
 	Category    string               `bson:"category" json:"category"`
 	Tags        []string             `bson:"tags,omitempty" json:"tags"`
 	OwnerID     primitive.ObjectID   `bson:"owner_id,omitempty" json:"owner_id"`
-	IssueIDs    []primitive.ObjectID `bson:"issues,omitempty" json:"issues_id"`
 	TeamIDs     []primitive.ObjectID `bson:"team,omitempty" json:"teams_id"`
 	Status      string               `bson:"status" json:"status"`
 }
