@@ -5,8 +5,9 @@ import { CREATE_PROJECT, VERSION } from "../../constants/urls";
 import { api } from "../api/api";
 import { AuthContext } from "../../content/AuthContent";
 import { toast } from 'react-hot-toast';
+import { ArrowLeftOutlined } from "@ant-design/icons";
 
-import createProjectBg from "../../assets/create-project.jpg"
+import createProjectBg from "../../assets/create-project.jpg";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -28,8 +29,8 @@ export default function CreateProject() {
         };
 
         try {
-            console.log(VERSION + CREATE_PROJECT)
-            const response = await api.post(CREATE_PROJECT, projectData, {
+            console.log(VERSION + CREATE_PROJECT);
+            await api.post(CREATE_PROJECT, projectData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -47,7 +48,21 @@ export default function CreateProject() {
     };
 
     return (
-        <div className="flex justify-center py-12  h-[910px] bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${createProjectBg})` }}>
+        <div
+            className="flex justify-center py-12 h-[910px] bg-contain bg-center bg-no-repeat relative"
+            style={{ backgroundImage: `url(${createProjectBg})` }}
+        >
+            {/* Geri dön butonu */}
+            <div className="absolute top-6 left-6">
+                <Button
+                    type="default"
+                    shape="circle"
+                    icon={<ArrowLeftOutlined />}
+                    size="large"
+                    onClick={() => navigate("/dashboard")}
+                />
+            </div>
+
             <div className="w-[600px] p-6 border border-gray-300 rounded-lg shadow-md bg-white">
                 <h2 className="text-center text-2xl font-semibold mb-5">Create New Project</h2>
                 <Form layout="vertical" name="createProject" onFinish={onFinish}>
@@ -86,23 +101,15 @@ export default function CreateProject() {
                         </Select>
                     </Form.Item>
 
-                    <Form.Item
-                        label="Tags"
-                        name="tags"
-                    >
+                    <Form.Item label="Tags" name="tags">
                         <Select
                             mode="tags"
                             placeholder="Add tags (press enter to add)"
                             className="!rounded-md"
-                        >
-                        </Select>
+                        />
                     </Form.Item>
 
-                    <Form.Item
-                        label="Status"
-                        name="status"
-                        initialValue="active"
-                    >
+                    <Form.Item label="Status" name="status" initialValue="active">
                         <Select placeholder="Select status" className="!rounded-md">
                             <Option value="active">Active</Option>
                             <Option value="archived">Archived</Option>
