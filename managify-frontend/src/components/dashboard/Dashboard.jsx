@@ -26,9 +26,7 @@ import {
     BellOutlined,
     LogoutOutlined,
     PlusOutlined,
-    CheckCircleOutlined,
     CrownOutlined,
-    CalendarOutlined,
     TrophyOutlined,
     RiseOutlined
 } from '@ant-design/icons';
@@ -38,19 +36,17 @@ import { useNavigate } from 'react-router-dom';
 import DashboardHeader from './DashboardHeader';
 import DashboardStats from './DashboardStats';
 
-
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 
 export default function ManagifyDashboard() {
-
     const navigate = useNavigate();
     const [userData, setUserData] = useState(null);
     const [userProjects, setUserProjects] = useState([]);
     const [recentIssues, setRecentIssues] = useState([]);
     const [subscriptionData, setSubscriptionData] = useState([]);
 
-    console.log(userProjects)
+    console.log(userData)
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -85,7 +81,6 @@ export default function ManagifyDashboard() {
     }[plan] || 'default');
 
     const handleUpgrade = () => {
-        console.log(subscriptionData.plan_type) // BASIC
         navigate("/plans", { state: { currentPlan: subscriptionData.plan_type } });
     };
 
@@ -120,11 +115,7 @@ export default function ManagifyDashboard() {
     const totalIssues = userProjects.reduce((sum, p) => sum + (p.totalIssues || 0), 0);
     const completedIssues = userProjects.reduce((sum, p) => sum + (p.completedIssues || 0), 0);
     const totalTeamMembers = userProjects.reduce((sum, p) => sum + (p.teamSize || 0), 0);
-    const averageProgress = userProjects.length
-        ? Math.round(userProjects.reduce((sum, p) => sum + (p.progress || 0), 0) / userProjects.length)
-        : 0;
 
-    // Safe full name extraction
     const firstName = (userData.full_name || userData.name || 'User').split(' ')[0];
 
     return (
@@ -136,7 +127,13 @@ export default function ManagifyDashboard() {
                 </div>
 
                 <div className="flex items-center space-x-4">
-                    <Button icon={<PlusOutlined />} type="primary">New Project</Button>
+                    <Button
+                        icon={<PlusOutlined />}
+                        type="primary"
+                        onClick={() => navigate("/create-project")}
+                    >
+                        New Project
+                    </Button>
                     <Button icon={<BellOutlined />} className="border-gray-300" />
                     <Dropdown overlay={userMenu} trigger={['click']}>
                         <div className="flex items-center space-x-2 cursor-pointer">
@@ -151,14 +148,12 @@ export default function ManagifyDashboard() {
 
             <Content className="p-6 bg-gray-50">
                 <div className="max-w-7xl mx-auto">
-                    {/* Welcome */}
                     <DashboardHeader
                         firstName={firstName}
                         userProjects={userProjects}
                         subscriptionData={subscriptionData}
                     />
 
-                    {/* Plan Warning */}
                     {subscriptionData.plan_type === 'BASIC' && userData.project_size >= 3 && (
                         <Alert
                             message="Plan Limit Approaching"
@@ -199,7 +194,9 @@ export default function ManagifyDashboard() {
                                         <Card
                                             key={p.id}
                                             size="small"
+                                            hoverable
                                             className="border border-gray-200 hover:border-blue-300 transition-colors cursor-pointer"
+                                            onClick={() => navigate(`/projects/${p.id}`)}
                                         >
                                             <div className="flex items-center justify-between mb-3">
                                                 <div>
@@ -245,7 +242,6 @@ export default function ManagifyDashboard() {
                                                 </div>
                                             </div>
 
-                                            {/* Status */}
                                             <div className="flex justify-start mt-2">
                                                 <Tag
                                                     color={
@@ -256,7 +252,8 @@ export default function ManagifyDashboard() {
                                                                 : p.status === "completed"
                                                                     ? "success"
                                                                     : "default"
-                                                    }>
+                                                    }
+                                                >
                                                     {p.status || "N/A"}
                                                 </Tag>
                                             </div>
