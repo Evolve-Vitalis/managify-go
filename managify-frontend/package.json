@@ -11,6 +11,7 @@
     "electron:build": "vite build && electron ."
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
     "@tailwindcss/vite": "^4.1.13",
     "@types/jwt-decode": "^2.2.1",
     "antd": "^5.27.4",
