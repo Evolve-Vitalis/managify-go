@@ -37,38 +37,84 @@ func GetProjectService() *ProjectService {
 }
 
 func (s *ProjectService) CreateProject(project *models.Project, user *models.User) (*models.Project, error) {
-	collection := database.DB.Collection(s.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	userColl := database.DB.Collection("users")
+	projectColl := database.DB.Collection(s.Collection)
+	subColl := database.DB.Collection("subscriptions")
+
+	var subscription models.Subscription
+	if err := subColl.FindOne(ctx, bson.M{"user_id": user.ID, "is_valid": true}).Decode(&subscription); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("no active subscription found")
+		}
+		return nil, fmt.Errorf("failed to check subscription: %w", err)
+	}
+
+	filter := bson.M{"_id": user.ID}
+	if subscription.PlanType == models.PlanBasic {
+		filter["project_size"] = bson.M{"$lt": 3} // sadece 3’ten azsa
+	}
+
+	update := bson.M{"$inc": bson.M{"project_size": 1}}
+	res, err := userColl.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update project size: %w", err)
+	}
+
+	if res.ModifiedCount == 0 {
+		return nil, fmt.Errorf("plan limit reached: BASIC users can only create up to 3 projects")
+	}
 
 	project.ID = primitive.NewObjectID()
 	project.OwnerID = user.ID
 
-	_, err := collection.InsertOne(ctx, project)
-	if err != nil {
-		log.Errorf("Failed to insert project into DB: %v", err)
-		return nil, err
+	if _, err := projectColl.InsertOne(ctx, project); err != nil {
+
+		_, err = userColl.UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{"$inc": bson.M{"project_size": -1}})
+		return nil, fmt.Errorf("failed to insert project: %w", err)
 	}
 
-	if err := increaseProjectSize(project.OwnerID); err != nil {
-		log.Errorf("Failed to increase project size: %v", err)
-		return nil, err
-	}
-
-	projectLogId := primitive.NewObjectID()
 	projectLog := models.ProjectLog{
-		ID:        projectLogId,
+		ID:        primitive.NewObjectID(),
 		ProjectID: project.ID.Hex(),
 		UserID:    user.ID.Hex(),
 		Message:   "Project has been created",
 		Timestamp: time.Now(),
 	}
-
 	if err := GetLogService().CreateLog(&projectLog); err != nil {
 		return nil, err
 	}
 
 	return project, nil
+}
+
+func reduceProjectSize(ownerID primitive.ObjectID) error {
+	log.Debugf("reduceProjectSize called for ownerID=%s", ownerID.Hex())
+
+	us := GetUserService()
+	collection := database.DB.Collection(us.Collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	update := bson.M{
+		"$inc": bson.M{"project_size": -1},
+	}
+
+	res, err := collection.UpdateOne(ctx, bson.M{"_id": ownerID}, update)
+	if err != nil {
+		log.WithError(err).Error("Failed to update project_size")
+		return fmt.Errorf("failed to update project size: %v", err)
+	}
+
+	if res.MatchedCount == 0 {
+		log.Warnf("User not found while increasing project size: %s", ownerID.Hex())
+		return fmt.Errorf("user not found")
+	}
+
+	log.Infof("Project size increased for user %s, matchedCount=%d, modifiedCount=%d", ownerID.Hex(), res.MatchedCount, res.ModifiedCount)
+	return nil
 }
 
 func (s *ProjectService) DeleteProjectById(objID primitive.ObjectID, user *models.User) error {
@@ -100,6 +146,8 @@ func (s *ProjectService) DeleteProjectById(objID primitive.ObjectID, user *model
 		log.WithError(err).Error("Failed to delete project")
 		return err
 	}
+
+	reduceProjectSize(project.OwnerID)
 
 	log.Infof("Project deleted successfully: %s, deletedCount=%d", objID.Hex(), res.DeletedCount)
 	return nil
