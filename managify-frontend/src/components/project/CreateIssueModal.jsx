@@ -1,54 +1,22 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Modal, Form, Input, Select, DatePicker, Button, message } from "antd";
-import { api } from "../api/api";
 
-export default function CreateIssueModal({ visible, onClose, statusId, projectId, token, onSuccess }) {
-  const [loading, setLoading] = useState(false);
+export default function CreateIssueModal({ visible, onClose, statusId, onSubmit }) {
   const [form] = Form.useForm();
 
   useEffect(() => {
     if (visible) form.resetFields();
   }, [visible, form]);
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = () => {
     if (!statusId) {
       message.error("Status is not selected!");
       return;
     }
-    if (!projectId) {
-      message.error("Project ID not found!");
-      return;
-    }
-
-    setLoading(true);
-    try {
-        
-      const payload = {
-        title: values.title,
-        description: values.description,
-        priority: values.priority || "DEFAULT",
-        due_date: values.due_date ? values.due_date.format("YYYY-MM-DD") : null,
-        status_id: statusId,
-        project_id: projectId
-      };
-
-      console.log("Submitting issue:", payload);
-
-      await api.post("/issue/create-issue", payload, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      message.success("Issue created successfully!");
-      form.resetFields();
-      onClose();
-
-      if (onSuccess) onSuccess(); 
-    } catch (error) {
-      console.error(error);
-      message.error(error.response?.data?.message || "Failed to create issue");
-    } finally {
-      setLoading(false);
-    }
+    const values = form.getFieldsValue();
+    onSubmit(values); // veriyi parent'a gönder
+    form.resetFields();
+    onClose();
   };
 
   return (
@@ -57,9 +25,9 @@ export default function CreateIssueModal({ visible, onClose, statusId, projectId
       open={visible}
       onCancel={onClose}
       footer={null}
-      destroyOnClose={false} 
+      destroyOnClose={true} // artık modal kapandığında form temizlenir
     >
-      <Form form={form} layout="vertical" onFinish={handleSubmit}>
+      <Form form={form} layout="vertical">
         <Form.Item label="Title" name="title" rules={[{ required: true, message: "Please input title" }]}>
           <Input placeholder="Issue title" />
         </Form.Item>
@@ -79,7 +47,7 @@ export default function CreateIssueModal({ visible, onClose, statusId, projectId
           <DatePicker style={{ width: "100%" }} />
         </Form.Item>
         <Form.Item>
-          <Button type="primary" htmlType="submit" loading={loading} block>
+          <Button type="primary" onClick={handleSubmit} block>
             Create Issue
           </Button>
         </Form.Item>

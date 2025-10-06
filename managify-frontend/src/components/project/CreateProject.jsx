@@ -29,7 +29,6 @@ export default function CreateProject() {
         };
 
         try {
-            console.log(VERSION + CREATE_PROJECT);
             await api.post(CREATE_PROJECT, projectData, {
                 headers: {
                     Authorization: `Bearer ${token}`,

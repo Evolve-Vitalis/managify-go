@@ -30,18 +30,16 @@ import {
 } from "@ant-design/icons";
 import { AuthContext } from "../../content/AuthContent";
 import { api } from "../api/api";
+import { toast } from 'react-hot-toast';
 import CreateIssueModal from "./CreateIssueModal";
 
 const { Title, Text, Paragraph } = Typography;
 
 export default function ProjectDetail() {
+
     const { id } = useParams();
     const navigate = useNavigate();
     const { token } = useContext(AuthContext);
-
-    const [hasChanges, setHasChanges] = useState(false); // Drag sonrası değişiklik var mı?
-    const [pendingIssuesByStatus, setPendingIssuesByStatus] = useState({}); // UI için geçici state
-
 
     const [loading, setLoading] = useState(true);
     const [project, setProject] = useState(null);
@@ -59,7 +57,6 @@ export default function ProjectDetail() {
     const [issueForm] = Form.useForm();
     const [addingIssue, setAddingIssue] = useState(false);
 
-
     const [fetchedStatuses, setFetchedStatuses] = useState({});
 
     useEffect(() => {
@@ -70,8 +67,6 @@ export default function ProjectDetail() {
                 });
                 const projectData = response.data.data;
                 setProject(projectData);
-
-                // Başlangıçta her statü için boş issue array
                 const initialIssues = {};
                 projectData.statutes.forEach(status => {
                     initialIssues[status.id] = [];
@@ -86,42 +81,53 @@ export default function ProjectDetail() {
         fetchProject();
     }, [id, token]);
 
-   
     useEffect(() => {
         if (!project?.statutes) return;
 
         project.statutes.forEach(status => {
-            if (!fetchedStatuses[status.id]) {
+            const statusIdStr = String(status.id);
+            if (!fetchedStatuses[statusIdStr]) {
                 api.get(`/issue/get/${status.id}`, { headers: { Authorization: `Bearer ${token}` } })
                     .then(res => {
                         setIssuesByStatus(prev => ({
                             ...prev,
-                            [status.id]: res.data.data.map(i => ({ ...i, id: String(i.id) }))
+                            [statusIdStr]: res.data.data.map(i => ({ ...i, id: String(i.id) }))
                         }));
-                        setFetchedStatuses(prev => ({ ...prev, [status.id]: true }));
+                        setFetchedStatuses(prev => ({ ...prev, [statusIdStr]: true }));
+                    })
+                    .catch(err => {
+                        console.error(`Failed to fetch issues for status ${status.id}:`, err);
                     });
             }
         });
-    }, [project?.statutes, token, fetchedStatuses]);
-
+    }, [project?.statutes, token]);
 
     const handleDragEnd = async (result) => {
         const { source, destination, draggableId } = result;
-        if (!destination) return;
+
+        if (!destination) {
+            return;
+        }
 
         const sourceId = source.droppableId;
         const destId = destination.droppableId;
-        if (sourceId === destId && source.index === destination.index) return;
 
-        // Eski state kaydı
+        if (sourceId === destId && source.index === destination.index) {
+            return;
+        }
+
         const oldIssues = { ...issuesByStatus };
-        const newIssues = { ...issuesByStatus };
 
+
+        const newIssues = { ...issuesByStatus };
         const sourceIssues = Array.from(newIssues[sourceId]);
         const destIssues = sourceId === destId ? sourceIssues : Array.from(newIssues[destId]);
 
+
         const [movedIssue] = sourceIssues.splice(source.index, 1);
-        if (!movedIssue) return;
+        if (!movedIssue) {
+            return;
+        }
 
         if (sourceId === destId) {
             sourceIssues.splice(destination.index, 0, movedIssue);
@@ -134,22 +140,29 @@ export default function ProjectDetail() {
 
         setIssuesByStatus(newIssues);
 
- 
         if (sourceId !== destId) {
             try {
-                await api.put(`/issue/update-status/${draggableId}/${destId}`, {}, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const res = await api.put(
+                    `/issue/update-status/${draggableId}/${destId}`,
+                    {},
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
+                setFetchedStatuses({});
+
+                toast.success("Action is verified");
                 message.success("Issue moved successfully");
             } catch (err) {
-                console.error(err);
-                setIssuesByStatus(oldIssues); // revert
+                setIssuesByStatus(oldIssues);
+                toast.error("Actiov is not verified")
                 message.error(err.response?.data?.message || "Failed to move issue");
             }
+        } else {
+            console.log("Status unchanged — no backend call made.");
         }
     };
 
-    // Handle Delete Project
     const handleDeleteProject = async () => {
         if (window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) {
             try {
@@ -164,7 +177,6 @@ export default function ProjectDetail() {
         }
     };
 
-    // Handle Delete Issue
     const handleDeleteIssue = async (issueId, statusId) => {
         try {
             await api.delete(`/issue/delete-issue/${issueId}`, {
@@ -182,7 +194,6 @@ export default function ProjectDetail() {
         }
     };
 
-    // Handle Add Status
     const handleAddStatus = async (values) => {
         setAddingStatus(true);
         try {
@@ -196,7 +207,7 @@ export default function ProjectDetail() {
                 statutes: [...(prev.statutes || []), response.data.data]
             }));
 
-            // Önemli: issuesByStatus’a boş array ekle
+
             setIssuesByStatus(prev => ({
                 ...prev,
                 [response.data.data.id]: []
@@ -212,7 +223,6 @@ export default function ProjectDetail() {
         }
     };
 
-    // Handle Invite Member
     const handleInviteMember = async (values) => {
         setInviting(true);
         try {
@@ -230,38 +240,40 @@ export default function ProjectDetail() {
         }
     };
 
-    // Handle Add Issue
     const handleAddIssue = async (values, statusId) => {
         setAddingIssue(true);
         try {
-            const res = await api.post("/issue/create-issue", {
+            const payload = {
                 ...values,
                 status_id: statusId,
-                project_id: project.project.id
-            }, {
+                project_id: project.project.id,
+                due_date: values.due_date ? values.due_date.format("YYYY-MM-DD") : null
+            };
+
+            const res = await api.post("/issue/create-issue", payload, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
-            // Convert ID to string for consistency
-            const newIssue = {
-                ...res.data.data,
-                id: String(res.data.data.id)
-            };
+            const newIssue = { ...res.data.data, id: String(res.data.data.id) };
+            const statusIdStr = String(statusId);
 
             setIssuesByStatus(prev => ({
                 ...prev,
-                [statusId]: [...(prev[statusId] || []), newIssue]
+                [statusIdStr]: [...(prev[statusIdStr] || []), newIssue]
             }));
 
             message.success("Issue created successfully!");
-            setIssueModal({ visible: false, statusId: null });
-            issueForm.resetFields();
+            toast.success("Issue is created");
+
         } catch (err) {
+            console.error("❌ Issue creation failed:", err);
             message.error(err.response?.data?.message || "Failed to create issue");
         } finally {
             setAddingIssue(false);
         }
     };
+
+
 
     if (loading) return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
     if (!project) return <div className="text-center mt-10"><Text>Project not found</Text></div>;
@@ -269,7 +281,6 @@ export default function ProjectDetail() {
     return (
         <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto">
-                {/* Header */}
                 <div className="mb-6">
                     <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)} className="mb-4">Back</Button>
                     <Card className="shadow-sm">
@@ -469,7 +480,9 @@ export default function ProjectDetail() {
                         </Modal>
 
                         {/* Create Issue Modal */}
-                        <CreateIssueModal visible={issueModal.visible} onClose={() => setIssueModal({ visible: false, statusId: null })} statusId={issueModal.statusId} projectId={project.project.id} token={token} onSuccess={(values) => handleAddIssue(values, issueModal.statusId)} />
+                        <CreateIssueModal visible={issueModal.visible}
+                            onSubmit={(values) => handleAddIssue(values, issueModal.statusId)}
+                            onClose={() => setIssueModal({ visible: false, statusId: null })} statusId={issueModal.statusId} projectId={project.project.id} token={token} onSuccess={(values) => handleAddIssue(values, issueModal.statusId)} />
 
                         {/* Team Members Section */}
                         <Card title={<Space><TeamOutlined /> <span>Team Members</span></Space>}
