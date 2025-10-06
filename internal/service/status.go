@@ -106,21 +106,6 @@ func (s *StatusService) DeleteStatus(deleteId primitive.ObjectID, projectId prim
 
 	return nil
 }
-func (s *StatusService) IsStatusInProject(statusID, projectID primitive.ObjectID) (bool, error) {
-	collection := database.DB.Collection(s.Collection)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	count, err := collection.CountDocuments(ctx, bson.M{
-		"_id":        statusID,
-		"project_id": projectID,
-	})
-	if err != nil {
-		return false, fmt.Errorf("failed to check status: %v", err)
-	}
-
-	return count > 0, nil
-}
 
 func (s *StatusService) GetStatusesByProjectId(projectID primitive.ObjectID) ([]*models.Status, error) {
 	collection := database.DB.Collection(s.Collection)
