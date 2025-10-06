@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 
 	"managify/database"
 	"managify/models"
@@ -99,7 +98,6 @@ func (s *LogService) GetLogsByUserId(userID string) ([]models.ProjectLog, error)
 			continue
 		}
 		logs = append(logs, logEntry)
-		fmt.Println(logs)
 	}
 
 	return logs, nil

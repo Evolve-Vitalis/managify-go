@@ -35,7 +35,6 @@ import {
     FireOutlined,
     CalendarOutlined,
     FileTextOutlined,
-    EditOutlined,
     DragOutlined,
     StarOutlined,
     RocketOutlined,
@@ -122,7 +121,6 @@ export default function ProjectDetail() {
             }
         });
     }, [project?.statutes, token]);
-
 
     const handleRemoveMember = async (memberId) => {
         try {

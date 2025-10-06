@@ -131,7 +131,6 @@ func (s *IssueService) GetIssuesByStatusID(statusID primitive.ObjectID) ([]*mode
 
 	return issues, nil
 }
-
 func (s *IssueService) UpdateIssueStatus(issueID, newStatusID, userID primitive.ObjectID) (*models.Issue, error) {
 	collection := database.DB.Collection(s.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

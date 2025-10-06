@@ -158,7 +158,6 @@ func (s *ProjectService) GetProject(projectID primitive.ObjectID, user *models.U
 	collection := database.DB.Collection(s.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	log.Infof("Searching project %s for user %s", projectID.Hex(), user.ID.Hex())
 
 	var project models.Project
 	err := collection.FindOne(ctx, bson.M{
@@ -180,7 +179,6 @@ func (s *ProjectService) GetProject(projectID primitive.ObjectID, user *models.U
 		return nil, err
 	}
 
-	log.Infof("project fetched successfully: %s by user %s", projectID.Hex(), user.ID.Hex())
 	return &project, nil
 }
 
@@ -221,6 +219,7 @@ func (s *ProjectService) IsUserInProject(userID, projectID primitive.ObjectID) (
 
 	return count > 0, nil
 }
+
 func (s *ProjectService) GetProjectsByUserId(userIDHex string) ([]*models.Project, error) {
 	userObjID, err := primitive.ObjectIDFromHex(userIDHex)
 	if err != nil {
@@ -260,8 +259,6 @@ func (s *ProjectService) GetProjectsByUserId(userIDHex string) ([]*models.Projec
 	if projects == nil {
 		projects = []*models.Project{}
 	}
-
-	log.Infof("Fetched %d projects for user %s", len(projects), userObjID.Hex())
 
 	return projects, nil
 }

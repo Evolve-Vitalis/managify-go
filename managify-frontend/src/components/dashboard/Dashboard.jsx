@@ -18,7 +18,9 @@ import {
     Spin,
     Popover,
     Menu,
-    Progress
+    Progress,
+    ConfigProvider,
+    theme
 } from 'antd';
 import {
     ProjectOutlined,
@@ -42,7 +44,9 @@ import {
     CalendarOutlined,
     ThunderboltOutlined,
     StarOutlined,
-    RocketOutlined
+    RocketOutlined,
+    SunOutlined,
+    MoonOutlined
 } from '@ant-design/icons';
 import { api } from '../api/api';
 import { decodeJWT } from '../jwt/Decoder';
@@ -61,6 +65,10 @@ export default function ManagifyDashboard() {
     const [invites, setInvites] = useState([]);
     const [invitesLoading, setInvitesLoading] = useState(false);
     const [recentLogs, setRecentLogs] = useState([]);
+    const [isDarkMode, setIsDarkMode] = useState(() => {
+        const saved = localStorage.getItem('theme');
+        return saved === 'dark';
+    });
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -172,8 +180,13 @@ export default function ManagifyDashboard() {
         window.location.href = "/login";
     };
 
+    const toggleTheme = () => {
+        const newTheme = !isDarkMode;
+        setIsDarkMode(newTheme);
+        localStorage.setItem('theme', newTheme ? 'dark' : 'light');
+    };
 
-  const handleProfile = () => {
+    const handleProfile = () => {
         navigate("/profile");
     };
 
@@ -250,15 +263,36 @@ export default function ManagifyDashboard() {
     const projectLimitPercentage = subscriptionData.plan_type === "BASIC" ? (userData.project_size / 3) * 100 :
         subscriptionData.plan_type === "PREMIUM" ? (userData.project_size / 10) * 100 : 0;
 
-    return (
-        <Layout className="min-h-screen">
-            <Header className="bg-white shadow-sm border-b px-6 flex items-center justify-between">
+return (
+    <ConfigProvider
+        theme={{
+             algorithm: isDarkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+            token: {
+                colorBgBase: isDarkMode ? "#1a1a1a" : "#f9fafb",
+                colorTextBase: isDarkMode ? "#f0f0f0" : "#000000",
+                colorBorder: isDarkMode ? "#333333" : "#d9d9d9",
+                colorBgContainer: isDarkMode ? "#1f1f1f" : "#ffffff",
+                colorPrimary: "#1677ff",
+            },
+        }}
+    >
+         <div className={isDarkMode ? "dark" : ""}>
+        <Layout className={`min-h-screen ${isDarkMode ? 'bg-[#0d0d0d]' : 'bg-gray-50'}`}>
+            {/* Header */}
+            <Header className={`shadow-sm border-b px-6 flex items-center justify-between ${isDarkMode ? 'bg-[#0d0d0d] border-gray-700' : 'bg-white'}`}>
                 <div className="flex items-center space-x-2">
                     <ProjectOutlined className="text-2xl text-blue-600" />
-                    <Title level={3} className="m-0 text-gray-800">Managify</Title>
+                    <Title level={3} className={`m-0 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Managify</Title>
                 </div>
 
                 <div className="flex items-center space-x-4">
+                    <Button
+                        icon={isDarkMode ? <SunOutlined /> : <MoonOutlined />}
+                        onClick={toggleTheme}
+                        className={isDarkMode ? 'border-gray-600' : 'border-gray-300'}
+                        title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                    />
+
                     <Button
                         icon={<PlusOutlined />}
                         type="primary"
@@ -267,14 +301,9 @@ export default function ManagifyDashboard() {
                         New Project
                     </Button>
 
-                    <Popover
-                        content={inviteContent}
-                        trigger="click"
-                        placement="bottomRight"
-                        onClick={fetchInvites}
-                    >
+                    <Popover content={inviteContent} trigger="click" placement="bottomRight" onClick={fetchInvites}>
                         <Badge count={invites.filter(i => i.status === 'pending').length}>
-                            <Button icon={<BellOutlined />} className="border-gray-300" />
+                            <Button icon={<BellOutlined />} className={isDarkMode ? 'border-gray-600' : 'border-gray-300'} />
                         </Badge>
                     </Popover>
 
@@ -282,14 +311,15 @@ export default function ManagifyDashboard() {
                         <div className="flex items-center space-x-2 cursor-pointer">
                             <Avatar size="large" className="bg-blue-600" icon={<UserOutlined />} />
                             <div className="hidden md:block">
-                                <Text strong>{userData.full_name || userData.name}</Text>
+                                <Text strong className={isDarkMode ? 'text-white' : ''}>{userData.full_name || userData.name}</Text>
                             </div>
                         </div>
                     </Dropdown>
                 </div>
             </Header>
 
-            <Content className="p-6 bg-gray-50">
+            {/* Content */}
+            <Content className={`p-6 transition-colors ${isDarkMode ? 'bg-[#0d0d0d] text-gray-200' : 'bg-gray-50 text-gray-800'}`}>
                 <div className="max-w-7xl mx-auto">
                     <DashboardHeader
                         firstName={firstName}
@@ -297,16 +327,13 @@ export default function ManagifyDashboard() {
                         subscriptionData={subscriptionData}
                     />
 
+                    {/* Plan Limit Alert */}
                     {subscriptionData.plan_type === 'BASIC' && userData.project_size >= 3 && (
                         <Alert
                             message="Plan Limit Approaching"
                             description={`You can create up to 3 projects on BASIC plan. You have currently created ${userData.project_size} projects.`}
                             type="warning"
-                            action={
-                                <Button size="small" type="primary" onClick={handleUpgrade}>
-                                    Upgrade Plan
-                                </Button>
-                            }
+                            action={<Button size="small" type="primary" onClick={handleUpgrade}>Upgrade Plan</Button>}
                             className="mb-6"
                             closable
                         />
@@ -314,67 +341,32 @@ export default function ManagifyDashboard() {
 
                     {/* Stats Cards */}
                     <Row gutter={[16, 16]} className="mb-6">
-                        <Col xs={24} sm={12} lg={6}>
-                            <Card className="shadow-sm hover:shadow-md transition-shadow">
-                                <Statistic
-                                    title="Total Projects"
-                                    value={userProjects.length}
-                                    prefix={<ProjectOutlined style={{ color: '#1890ff' }} />}
-                                    valueStyle={{ color: '#1890ff' }}
-                                />
-                            </Card>
-                        </Col>
-                        <Col xs={24} sm={12} lg={6}>
-                            <Card className="shadow-sm hover:shadow-md transition-shadow">
-                                <Statistic
-                                    title="Active Projects"
-                                    value={activeProjects}
-                                    prefix={<RocketOutlined style={{ color: '#52c41a' }} />}
-                                    valueStyle={{ color: '#52c41a' }}
-                                />
-                            </Card>
-                        </Col>
-                        <Col xs={24} sm={12} lg={6}>
-                            <Card className="shadow-sm hover:shadow-md transition-shadow">
-                                <Statistic
-                                    title="Total Issues"
-                                    value={totalIssues}
-                                    prefix={<IssuesCloseOutlined style={{ color: '#faad14' }} />}
-                                    valueStyle={{ color: '#faad14' }}
-                                />
-                            </Card>
-                        </Col>
-                        <Col xs={24} sm={12} lg={6}>
-                            <Card className="shadow-sm hover:shadow-md transition-shadow">
-                                <Statistic
-                                    title="Team Members"
-                                    value={totalMembers}
-                                    prefix={<TeamOutlined style={{ color: '#722ed1' }} />}
-                                    valueStyle={{ color: '#722ed1' }}
-                                />
-                            </Card>
-                        </Col>
+                        {[
+                            { title: "Total Projects", value: userProjects.length, icon: <ProjectOutlined style={{ color: '#1890ff' }} />, color: '#1890ff' },
+                            { title: "Active Projects", value: activeProjects, icon: <RocketOutlined style={{ color: '#52c41a' }} />, color: '#52c41a' },
+                            { title: "Total Issues", value: totalIssues, icon: <IssuesCloseOutlined style={{ color: '#faad14' }} />, color: '#faad14' },
+                            { title: "Team Members", value: totalMembers, icon: <TeamOutlined style={{ color: '#722ed1' }} />, color: '#722ed1' }
+                        ].map((stat, idx) => (
+                            <Col key={idx} xs={24} sm={12} lg={6}>
+                                <Card className={`shadow-sm hover:shadow-md transition-shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                                    <Statistic
+                                        title={stat.title}
+                                        value={stat.value}
+                                        prefix={stat.icon}
+                                        valueStyle={{ color: stat.color }}
+                                    />
+                                </Card>
+                            </Col>
+                        ))}
                     </Row>
 
                     <Row gutter={[24, 24]}>
+                        {/* My Projects */}
                         <Col xs={24} lg={16}>
                             <Card
-                                title={
-                                    <Space>
-                                        <ProjectOutlined style={{ color: '#1890ff' }} />
-                                        <span>My Projects</span>
-                                    </Space>
-                                }
+                                title={<Space><ProjectOutlined style={{ color: '#1890ff' }} />My Projects</Space>}
                                 className="mb-6"
-                                extra={
-                                    <Button
-                                        type="primary"
-                                        icon={<PlusOutlined />}
-                                        onClick={() => navigate("/create-project")}
-                                    >
-                                        New Project
-                                    </Button>
-                                }
+                                extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => navigate("/create-project")}>New Project</Button>}
                             >
                                 <div className="space-y-4">
                                     {userProjects.map((p) => (
@@ -382,27 +374,22 @@ export default function ManagifyDashboard() {
                                             key={p.id}
                                             size="small"
                                             hoverable
-                                            className="border border-gray-200 hover:border-blue-300 transition-all hover:shadow-md"
+                                            className={`border transition-all hover:shadow-md ${isDarkMode ? 'border-gray-700 hover:border-blue-400 bg-gray-800' : 'border-gray-200 hover:border-blue-300 bg-white'}`}
                                             onClick={() => navigate(`/projects/${p.id}`)}
                                         >
                                             <div className="flex items-center justify-between mb-3">
                                                 <div className="flex items-center space-x-3">
                                                     <Avatar
                                                         size="large"
-                                                        style={{
-                                                            backgroundColor: p.status === 'active' ? '#52c41a' :
-                                                                p.status === 'completed' ? '#1890ff' : '#8c8c8c'
-                                                        }}
+                                                        style={{ backgroundColor: p.status === 'active' ? '#52c41a' : p.status === 'completed' ? '#1890ff' : '#8c8c8c' }}
                                                         icon={<ProjectOutlined />}
                                                     />
                                                     <div>
                                                         <Title level={5} className="mb-1">{p.name}</Title>
-                                                        <Text className="text-gray-500">{p.description}</Text>
+                                                        <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>{p.description}</Text>
                                                     </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <Tag color="blue">{p.category || "Uncategorized"}</Tag>
-                                                </div>
+                                                <Tag color="blue">{p.category || "Uncategorized"}</Tag>
                                             </div>
 
                                             <div className="flex items-center justify-between">
@@ -417,28 +404,14 @@ export default function ManagifyDashboard() {
                                                     </div>
                                                 </Space>
                                                 <div>
-                                                    {p.tags && p.tags.length > 0 ? (
-                                                        p.tags.map((tag, i) => (
-                                                            <Tag key={i} color="default">{tag}</Tag>
-                                                        ))
-                                                    ) : (
-                                                        <Tag color="default">N/A</Tag>
-                                                    )}
+                                                    {p.tags?.length > 0 ? p.tags.map((tag, i) => <Tag key={i} color="default">{tag}</Tag>) : <Tag color="default">N/A</Tag>}
                                                 </div>
                                             </div>
 
                                             <div className="flex justify-start mt-3">
                                                 <Tag
-                                                    icon={
-                                                        p.status === "active" ? <ThunderboltOutlined /> :
-                                                            p.status === "completed" ? <CheckCircleOutlined /> :
-                                                                <ClockCircleOutlined />
-                                                    }
-                                                    color={
-                                                        p.status === "active" ? "processing" :
-                                                            p.status === "review" ? "warning" :
-                                                                p.status === "completed" ? "success" : "default"
-                                                    }
+                                                    icon={p.status === "active" ? <ThunderboltOutlined /> : p.status === "completed" ? <CheckCircleOutlined /> : <ClockCircleOutlined />}
+                                                    color={p.status === "active" ? "processing" : p.status === "review" ? "warning" : p.status === "completed" ? "success" : "default"}
                                                 >
                                                     {p.status || "N/A"}
                                                 </Tag>
@@ -449,31 +422,21 @@ export default function ManagifyDashboard() {
                             </Card>
                         </Col>
 
+                        {/* Sidebar */}
                         <Col xs={24} lg={8}>
-                            <Card
-                                title={
-                                    <Space>
-                                        <CalendarOutlined style={{ color: '#722ed1' }} />
-                                        <span>Recent Activity</span>
-                                    </Space>
-                                }
-                                className="mb-6"
-                            >
+                            {/* Recent Activity */}
+                            <Card title={<Space><CalendarOutlined style={{ color: '#722ed1' }} />Recent Activity</Space>} className="mb-6">
                                 <List
                                     dataSource={recentLogs}
                                     renderItem={(log) => (
-                                        <List.Item className="px-0 py-3 hover:bg-gray-50 transition-colors rounded">
+                                        <List.Item className={`px-0 py-3 transition-colors rounded ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
                                             <div className="w-full flex items-start space-x-3">
-                                                <div className="mt-1">
-                                                    {getLogIcon(log.message)}
-                                                </div>
+                                                <div className="mt-1">{getLogIcon(log.message)}</div>
                                                 <div className="flex-1">
                                                     <Text className="text-sm block mb-1">{log.message}</Text>
                                                     <div className="flex items-center space-x-2">
                                                         <ClockCircleOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-                                                        <Text className="text-xs text-gray-500">
-                                                            {formatRelativeTime(log.timestamp)}
-                                                        </Text>
+                                                        <Text className="text-xs text-gray-500">{formatRelativeTime(log.timestamp)}</Text>
                                                     </div>
                                                 </div>
                                             </div>
@@ -482,90 +445,48 @@ export default function ManagifyDashboard() {
                                 />
                             </Card>
 
-                            <Card
-                                title={
-                                    <Space>
-                                        <StarOutlined style={{ color: '#faad14' }} />
-                                        <span>Subscription Details</span>
-                                    </Space>
-                                }
-                            >
+                            {/* Subscription Details */}
+                            <Card title={<Space><StarOutlined style={{ color: '#faad14' }} />Subscription Details</Space>}>
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
                                         <Text>Plan Type</Text>
-                                        <Tag
-                                            color={getPlanColor(subscriptionData.plan_type)}
-                                            icon={getPlanIcon(subscriptionData.plan_type)}
-                                        >
-                                            {subscriptionData.plan_type || "N/A"}
-                                        </Tag>
+                                        <Tag color={getPlanColor(subscriptionData.plan_type)} icon={getPlanIcon(subscriptionData.plan_type)}>{subscriptionData.plan_type || "N/A"}</Tag>
                                     </div>
-
                                     <div className="flex justify-between items-center">
-                                        <Text>Status</Text>
-                                        <Badge
-                                            status={subscriptionData.isValid ? "success" : "error"}
-                                            text={subscriptionData.isValid ? "Active" : "Inactive"}
-                                        />
+                                        <Badge status={subscriptionData.isValid ? "success" : "error"} text={subscriptionData.isValid ? "Active" : "Inactive"} />
                                     </div>
-
                                     <div className="flex justify-between items-center">
-                                        <Space>
-                                            <CalendarOutlined style={{ color: '#8c8c8c' }} />
-                                            <Text>Start</Text>
-                                        </Space>
-                                        <Text className="text-gray-600">
-                                            {formatDate(subscriptionData.subscription_start_date)}
-                                        </Text>
+                                        <Space><CalendarOutlined style={{ color: '#8c8c8c' }} /> <Text>Start</Text></Space>
+                                        <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>{formatDate(subscriptionData.subscription_start_date)}</Text>
                                     </div>
-
                                     <div className="flex justify-between items-center">
-                                        <Space>
-                                            <CalendarOutlined style={{ color: '#8c8c8c' }} />
-                                            <Text>End</Text>
-                                        </Space>
-                                        <Text className="text-gray-600">
-                                            {formatDate(subscriptionData.subscription_end_date)}
-                                        </Text>
+                                        <Space><CalendarOutlined style={{ color: '#8c8c8c' }} /> <Text>End</Text></Space>
+                                        <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>{formatDate(subscriptionData.subscription_end_date)}</Text>
                                     </div>
 
                                     <Divider />
 
-                                    <div>
-                                        <div className="flex justify-between items-center mb-2">
-                                            <Space>
-                                                <ProjectOutlined style={{ color: '#1890ff' }} />
-                                                <Text>Project Usage</Text>
-                                            </Space>
-                                            <Text strong>
-                                                {userData.project_size} / {
-                                                    subscriptionData.plan_type === "BASIC" ? "3" :
-                                                        subscriptionData.plan_type === "PREMIUM" ? "10" : "∞"
-                                                }
-                                            </Text>
-                                        </div>
-
+                                    <div className="flex justify-between items-center mb-2">
+                                        <Space><ProjectOutlined style={{ color: '#1890ff' }} /> <Text>Project Usage</Text></Space>
+                                        <Text strong>{userData.project_size} / {subscriptionData.plan_type === "BASIC" ? "3" : subscriptionData.plan_type === "PREMIUM" ? "10" : "∞"}</Text>
                                     </div>
 
                                     {subscriptionData.plan_type !== "PRO" && (
-                                        <Button
-                                            type="primary"
-                                            block
-                                            className="mt-4"
-                                            icon={<RiseOutlined />}
-                                            onClick={handleUpgrade}
-                                        >
-                                            Upgrade Plan
-                                        </Button>
+                                        <Button type="primary" block className="mt-4" icon={<RiseOutlined />} onClick={handleUpgrade}>Upgrade Plan</Button>
                                     )}
                                 </div>
                             </Card>
                         </Col>
                     </Row>
                 </div>
+                
             </Content>
+            
         </Layout>
-    );
+        </div>
+    </ConfigProvider>
+);
+
 }
 
 const formatDate = (isoString) => {
