@@ -13,9 +13,11 @@ import {
     Badge,
     Space,
     Dropdown,
-    Menu,
     Divider,
-    Alert
+    Alert,
+    Spin,
+    Popover,
+    Menu
 } from 'antd';
 import {
     ProjectOutlined,
@@ -45,9 +47,10 @@ export default function ManagifyDashboard() {
     const [userProjects, setUserProjects] = useState([]);
     const [recentIssues, setRecentIssues] = useState([]);
     const [subscriptionData, setSubscriptionData] = useState([]);
+    const [invites, setInvites] = useState([]);
+    const [invitesLoading, setInvitesLoading] = useState(false);
 
-    console.log(userData)
-
+    // Fetch user data
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) return;
@@ -63,14 +66,44 @@ export default function ManagifyDashboard() {
 
                 setSubscriptionData(data.subscription)
                 setUserData(data.user);
-
                 setUserProjects(data.project || []);
                 setRecentIssues(data.recentIssues || []);
             })
             .catch(err => {
                 console.error(err.response?.data || err);
             });
+
+        fetchInvites();
     }, []);
+
+    // Fetch project invites
+    const fetchInvites = async () => {
+        setInvitesLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await api.get('/project/invites', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setInvites(res.data.data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setInvitesLoading(false);
+        }
+    };
+
+    // Respond to invite
+    const respondInvite = async (inviteID, accept) => {
+        try {
+            const token = localStorage.getItem('token');
+            await api.put(`/project/invite/${inviteID}`, { accept }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            fetchInvites(); // refresh list
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     if (!userData) return <div>Loading...</div>;
 
@@ -111,12 +144,33 @@ export default function ManagifyDashboard() {
         </Menu>
     );
 
-    // Statistics
     const totalIssues = userProjects.reduce((sum, p) => sum + (p.totalIssues || 0), 0);
     const completedIssues = userProjects.reduce((sum, p) => sum + (p.completedIssues || 0), 0);
     const totalTeamMembers = userProjects.reduce((sum, p) => sum + (p.teamSize || 0), 0);
-
     const firstName = (userData.full_name || userData.name || 'User').split(' ')[0];
+
+    // Invite dropdown content
+    const inviteContent = (
+        <div style={{ width: 300, maxHeight: 400, overflowY: 'auto' }}>
+            {invitesLoading ? (
+                <div className="flex justify-center p-4"><Spin /></div>
+            ) : invites.length === 0 ? (
+                <Text className="p-4 block">No notifications</Text>
+            ) : (
+                invites.map(invite => (
+                    <div key={invite._id} className="flex justify-between items-center mb-2 p-2 border-b">
+                        <div>
+                            <Text strong>{invite.senderName || 'Someone'}</Text> invited you to project <Text>{invite.projectName || 'Project'}</Text>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button size="small" type="primary" onClick={() => respondInvite(invite._id, true)}>Accept</Button>
+                            <Button size="small" danger onClick={() => respondInvite(invite._id, false)}>Decline</Button>
+                        </div>
+                    </div>
+                ))
+            )}
+        </div>
+    );
 
     return (
         <Layout className="min-h-screen">
@@ -134,7 +188,15 @@ export default function ManagifyDashboard() {
                     >
                         New Project
                     </Button>
-                    <Button icon={<BellOutlined />} className="border-gray-300" />
+
+                    <Popover
+                        content={inviteContent}
+                        trigger="click"
+                        placement="bottomRight"
+                    >
+                        <Button icon={<BellOutlined />} className="border-gray-300" />
+                    </Popover>
+
                     <Dropdown overlay={userMenu} trigger={['click']}>
                         <div className="flex items-center space-x-2 cursor-pointer">
                             <Avatar size="large" className="bg-blue-600" icon={<UserOutlined />} />
@@ -175,7 +237,6 @@ export default function ManagifyDashboard() {
                         totalTeamMembers={totalTeamMembers}
                     />
 
-                    {/* Projects List */}
                     <Row gutter={[24, 24]}>
                         <Col xs={24} lg={16}>
                             <Card
@@ -200,9 +261,7 @@ export default function ManagifyDashboard() {
                                         >
                                             <div className="flex items-center justify-between mb-3">
                                                 <div>
-                                                    <Title level={5} className="mb-1">
-                                                        {p.name}
-                                                    </Title>
+                                                    <Title level={5} className="mb-1">{p.name}</Title>
                                                     <Text className="text-gray-500">{p.description}</Text>
                                                 </div>
                                                 <div className="text-right">
@@ -232,9 +291,7 @@ export default function ManagifyDashboard() {
                                                 <div>
                                                     {p.tags && p.tags.length > 0 ? (
                                                         p.tags.map((tag, i) => (
-                                                            <Tag key={i} color="default">
-                                                                {tag}
-                                                            </Tag>
+                                                            <Tag key={i} color="default">{tag}</Tag>
                                                         ))
                                                     ) : (
                                                         <Tag color="default">N/A</Tag>
@@ -271,24 +328,18 @@ export default function ManagifyDashboard() {
                                         <List.Item className="px-0">
                                             <div className="w-full">
                                                 <div className="flex justify-between items-start mb-2">
-                                                    <Text strong className="text-sm">
-                                                        {issue.title}
-                                                    </Text>
+                                                    <Text strong className="text-sm">{issue.title}</Text>
                                                     <Tag size="small" color={getPriorityColor(issue.priority)}>
                                                         {issue.priority}
                                                     </Tag>
                                                 </div>
                                                 <div className="flex justify-between items-center">
-                                                    <Text className="text-xs text-gray-500">
-                                                        {issue.project || "N/A"}
-                                                    </Text>
+                                                    <Text className="text-xs text-gray-500">{issue.project || "N/A"}</Text>
                                                     <Space size="small">
                                                         <Tag size="small" color={getStatusColor(issue.status)}>
                                                             {issue.status}
                                                         </Tag>
-                                                        <Text className="text-xs text-gray-400">
-                                                            {issue.dueDate || "N/A"}
-                                                        </Text>
+                                                        <Text className="text-xs text-gray-400">{issue.dueDate || "N/A"}</Text>
                                                     </Space>
                                                 </div>
                                             </div>
@@ -301,10 +352,7 @@ export default function ManagifyDashboard() {
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
                                         <Text>Plan Type</Text>
-                                        <Tag
-                                            color={getPlanColor(subscriptionData.plan_type)}
-                                            icon={getPlanIcon(subscriptionData.plan_type)}
-                                        >
+                                        <Tag color={getPlanColor(subscriptionData.plan_type)} icon={getPlanIcon(subscriptionData.plan_type)}>
                                             {subscriptionData.plan_type || "N/A"}
                                         </Tag>
                                     </div>
@@ -319,30 +367,19 @@ export default function ManagifyDashboard() {
 
                                     <div className="flex justify-between items-center">
                                         <Text>Start</Text>
-                                        <Text className="text-gray-600">
-                                            {formatDate(subscriptionData.subscription_start_date)}
-                                        </Text>
+                                        <Text className="text-gray-600">{formatDate(subscriptionData.subscription_start_date)}</Text>
                                     </div>
 
                                     <div className="flex justify-between items-center">
                                         <Text>End</Text>
-                                        <Text className="text-gray-600">
-                                            {formatDate(subscriptionData.subscription_end_date)}
-                                        </Text>
+                                        <Text className="text-gray-600">{formatDate(subscriptionData.subscription_end_date)}</Text>
                                     </div>
 
                                     <Divider />
 
                                     <div className="flex justify-between items-center">
                                         <Text>Project Limit</Text>
-                                        <Text>
-                                            {userData.project_size} /{" "}
-                                            {subscriptionData.plan_type === "BASIC"
-                                                ? "3"
-                                                : subscriptionData.plan_type === "PREMIUM"
-                                                    ? "10"
-                                                    : "∞"}
-                                        </Text>
+                                        <Text>{userData.project_size} / {subscriptionData.plan_type === "BASIC" ? "3" : subscriptionData.plan_type === "PREMIUM" ? "10" : "∞"}</Text>
                                     </div>
 
                                     {subscriptionData.plan_type !== "PRO" && (
