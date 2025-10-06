@@ -13,6 +13,7 @@ import PublicRoute from "./content/PublicRoute";
 
 import { Toaster } from "react-hot-toast";
 import ProjectDetail from "./components/project/DetailProject";
+import Profile from "./components/main/Profile";
 
 const isElectron = window?.process?.versions?.electron;
 
@@ -30,6 +31,15 @@ export default function App() {
               <PublicRoute>
                 <Register />
               </PublicRoute>
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
             }
           />
 

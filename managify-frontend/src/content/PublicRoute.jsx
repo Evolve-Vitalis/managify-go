@@ -5,10 +5,9 @@ import { AuthContext } from "./AuthContent";
 export default function PublicRoute({ children }) {
   const { token, loading } = useContext(AuthContext);
   
-  
-  if (loading) {
-    return <div>Loading...</div>; 
-  }
+  if (loading) return <div>Loading...</div>; 
 
-  return token ? <Navigate to="/dashboard" replace /> : children;
+  if (token) return <Navigate to="/dashboard" replace />; 
+
+  return children; 
 }

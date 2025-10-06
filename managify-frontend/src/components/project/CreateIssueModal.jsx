@@ -14,7 +14,7 @@ export default function CreateIssueModal({ visible, onClose, statusId, onSubmit 
       return;
     }
     const values = form.getFieldsValue();
-    onSubmit(values); // veriyi parent'a gönder
+    onSubmit(values); 
     form.resetFields();
     onClose();
   };
@@ -25,7 +25,7 @@ export default function CreateIssueModal({ visible, onClose, statusId, onSubmit 
       open={visible}
       onCancel={onClose}
       footer={null}
-      destroyOnClose={true} // artık modal kapandığında form temizlenir
+      destroyOnClose={true} 
     >
       <Form form={form} layout="vertical">
         <Form.Item label="Title" name="title" rules={[{ required: true, message: "Please input title" }]}>

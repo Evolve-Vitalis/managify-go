@@ -30,7 +30,7 @@ export default function CreateStatusColumnModal({ projectId, token, onSuccess })
       message.success("Status column created successfully!");
       closeModal();
 
-      // Callback to parent to refresh statuses
+ 
       if (onSuccess) onSuccess(response.data.data);
 
     } catch (error) {

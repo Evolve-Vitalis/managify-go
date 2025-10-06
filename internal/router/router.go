@@ -45,13 +45,15 @@ func RouterProject(app *fiber.App) {
 	api.Post(routes.ProjectCreate, handler.CreateProjectHandler)
 	api.Delete(routes.ProjectDelete, handler.DeleteProjectHandler)
 	api.Get(routes.ProjectGet, handler.GetProjectHandler)
+	api.Delete(routes.ProjectMemberDelete, handler.DeleteMemberFromProjectByIdHandler)
 }
 
 func RouterInvite(app *fiber.App) {
 	api := app.Group(routes.InviteBase, middleware.AuthMiddleware)
 
+	api.Get(routes.InviteGetById, handler.GetInviteHandlerById)
 	api.Post(routes.InviteCreate, handler.CreateProjectInviteHandler)
-	api.Post(routes.InviteRespond, handler.RespondProjectInviteHandler)
+	api.Put(routes.InviteRespond, handler.RespondProjectInviteHandler)
 }
 
 func RouterRole(app *fiber.App) {
@@ -80,5 +82,5 @@ func RouterIssue(app *fiber.App) {
 func RouterLogger(app *fiber.App) {
 	api := app.Group(routes.LoggerBase, middleware.AuthMiddleware)
 
-	api.Get(routes.LoggerGet, handler.GetLogsHandler)
+	api.Get(routes.LoggerGet, handler.GetLogsHandlerByUserId)
 }

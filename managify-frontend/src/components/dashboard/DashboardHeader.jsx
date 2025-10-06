@@ -1,9 +1,9 @@
-import { Layout, Tag, Typography } from "antd";
+import { Tag, Typography, Button } from "antd";
+import InviteBell from "./InviteBell";
 
-const { Header, Content } = Layout;
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
-export default function DashboardHeader({ firstName, userProjects, subscriptionData }) {
+export default function DashboardHeader({ firstName, userProjects, subscriptionData, userID, token }) {
 
     const getPlanColor = (plan) => ({
         BASIC: "default",
@@ -13,6 +13,7 @@ export default function DashboardHeader({ firstName, userProjects, subscriptionD
 
     const getPlanIcon = (plan) =>
         plan === "PRO" ? "👑" : plan === "PREMIUM" ? "🏆" : null;
+
     return (
         <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
@@ -21,11 +22,14 @@ export default function DashboardHeader({ firstName, userProjects, subscriptionD
                     You have {userProjects.length} active projects today
                 </Text>
             </div>
-            <div className="mt-4 md:mt-0">
+            <div className="mt-4 md:mt-0 flex items-center gap-4">
+                {/* Plan Tag */}
                 <Tag color={getPlanColor(subscriptionData.plan_type)} icon={getPlanIcon(subscriptionData.plan_type)} className="px-3 py-1 text-sm">
                     {subscriptionData.plan_type || 'N/A'} Plan
                 </Tag>
 
+                {/* Bell component */}
+                <InviteBell userID={userID} token={token} />
             </div>
         </div>
     )

@@ -81,6 +81,7 @@ type StatusWithIssues struct {
 }
 
 func GetProjectHandler(c *fiber.Ctx) error {
+
 	projectIDHex := c.Params("id")
 	projectID, err := primitive.ObjectIDFromHex(projectIDHex)
 	if err != nil {
@@ -100,6 +101,11 @@ func GetProjectHandler(c *fiber.Ctx) error {
 	statuses, err := service.GetStatusService().GetStatusesByProjectId(projectID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": constant.ErrInternalServer})
+	}
+
+	_, teamMembers, err := service.GetProjectService().GetProjectWithTeam(projectID, user)
+	if err != nil {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": constant.ErrForbidden})
 	}
 
 	var statusesWithIssues []StatusWithIssues
@@ -123,10 +129,42 @@ func GetProjectHandler(c *fiber.Ctx) error {
 	data := fiber.Map{
 		"project":  project,
 		"statutes": statusesWithIssues,
+		"members":  teamMembers,
 	}
 
 	return c.JSON(fiber.Map{
 		"message": constant.SuccessFetched,
 		"data":    data,
+	})
+}
+
+func DeleteMemberFromProjectByIdHandler(c *fiber.Ctx) error {
+
+	memberId := c.Params("memberId")
+	user, ok := utils.GetUserLocal(c)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": constant.ErrInternalServer,
+		})
+	}
+
+	memberIdObj, err := primitive.ObjectIDFromHex(memberId)
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": constant.ErrBadRequest})
+	}
+
+	err = service.GetProjectService().DeleteMemberFromProjectById(user.ID, memberIdObj)
+
+	if err != nil {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"message": constant.ErrInternalServer,
+		})
+	}
+
+	fmt.Print(err)
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": constant.SuccessDeleted,
 	})
 }

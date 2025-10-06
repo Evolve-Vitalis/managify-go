@@ -81,7 +81,6 @@ func LoginHandler(c *fiber.Ctx) error {
 		"token":   res.Token,
 	})
 }
-
 func GetUserByIdHandler(c *fiber.Ctx) error {
 	userIDHex := c.Params("id")
 

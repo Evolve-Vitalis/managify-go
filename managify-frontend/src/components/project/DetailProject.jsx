@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { DeleteOutlined } from "@ant-design/icons";
+import { CloseOutlined, DeleteOutlined } from "@ant-design/icons";
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 import {
@@ -18,6 +18,9 @@ import {
     Modal,
     Form,
     Input,
+    Badge,
+    Tooltip,
+    Progress
 } from "antd";
 import {
     ArrowLeftOutlined,
@@ -26,7 +29,18 @@ import {
     UserOutlined,
     FolderOutlined,
     TagsOutlined,
-    UserAddOutlined
+    UserAddOutlined,
+    CheckCircleOutlined,
+    ClockCircleOutlined,
+    FireOutlined,
+    CalendarOutlined,
+    FileTextOutlined,
+    EditOutlined,
+    DragOutlined,
+    StarOutlined,
+    RocketOutlined,
+    ThunderboltOutlined,
+    FlagOutlined
 } from "@ant-design/icons";
 import { AuthContext } from "../../content/AuthContent";
 import { api } from "../api/api";
@@ -54,19 +68,26 @@ export default function ProjectDetail() {
     const [inviting, setInviting] = useState(false);
 
     const [issueModal, setIssueModal] = useState({ visible: false, statusId: null });
-    const [issueForm] = Form.useForm();
+
     const [addingIssue, setAddingIssue] = useState(false);
 
     const [fetchedStatuses, setFetchedStatuses] = useState({});
 
+    const [member, setMember] = useState({});
+
+
     useEffect(() => {
         const fetchProject = async () => {
             try {
+
+                console.log("Detail Project Token" + token)
                 const response = await api.get(`/project/projects/${id}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const projectData = response.data.data;
+
                 setProject(projectData);
+                setMember(projectData.members);
                 const initialIssues = {};
                 projectData.statutes.forEach(status => {
                     initialIssues[status.id] = [];
@@ -102,6 +123,22 @@ export default function ProjectDetail() {
         });
     }, [project?.statutes, token]);
 
+
+    const handleRemoveMember = async (memberId) => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            await api.delete(`project/projects/member/${memberId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            setMember(prev => prev.filter(m => m.id !== memberId));
+        } catch (err) {
+            console.error(err.response?.data || err.message);
+        }
+    };
+
     const handleDragEnd = async (result) => {
         const { source, destination, draggableId } = result;
 
@@ -118,11 +155,9 @@ export default function ProjectDetail() {
 
         const oldIssues = { ...issuesByStatus };
 
-
         const newIssues = { ...issuesByStatus };
         const sourceIssues = Array.from(newIssues[sourceId]);
         const destIssues = sourceId === destId ? sourceIssues : Array.from(newIssues[destId]);
-
 
         const [movedIssue] = sourceIssues.splice(source.index, 1);
         if (!movedIssue) {
@@ -155,11 +190,9 @@ export default function ProjectDetail() {
                 message.success("Issue moved successfully");
             } catch (err) {
                 setIssuesByStatus(oldIssues);
-                toast.error("Actiov is not verified")
+                toast.error("Action is not verified");
                 message.error(err.response?.data?.message || "Failed to move issue");
             }
-        } else {
-            console.log("Status unchanged — no backend call made.");
         }
     };
 
@@ -207,7 +240,6 @@ export default function ProjectDetail() {
                 statutes: [...(prev.statutes || []), response.data.data]
             }));
 
-
             setIssuesByStatus(prev => ({
                 ...prev,
                 [response.data.data.id]: []
@@ -226,15 +258,20 @@ export default function ProjectDetail() {
     const handleInviteMember = async (values) => {
         setInviting(true);
         try {
-            await api.post(`/project/${id}/invite`, { receiver_email: values.email }, {
+            await api.post(`/invite/project-invite`, {
+                email: values.email,
+                project_id: project.project.id
+            }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
             message.success("Invitation sent successfully!");
+            toast.success("Invitation sent successfully!");
             setInviteModalVisible(false);
             inviteForm.resetFields();
         } catch (error) {
             message.error(error.response?.data?.message || "Failed to send invitation");
+            toast.error("Invitation is failed");
         } finally {
             setInviting(false);
         }
@@ -266,67 +303,149 @@ export default function ProjectDetail() {
             toast.success("Issue is created");
 
         } catch (err) {
-            console.error("❌ Issue creation failed:", err);
             message.error(err.response?.data?.message || "Failed to create issue");
         } finally {
             setAddingIssue(false);
         }
     };
 
+    const getPriorityIcon = (priority) => {
+        const p = priority?.toLowerCase();
+        if (p === 'urgent' || p === 'critical') return <FireOutlined style={{ color: '#ff4d4f' }} />;
+        if (p === 'high') return <FlagOutlined style={{ color: '#ff7a45' }} />;
+        if (p === 'medium') return <ClockCircleOutlined style={{ color: '#faad14' }} />;
+        return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
+    };
 
+    const getPriorityColor = (priority) => {
+        const p = priority?.toLowerCase();
+        if (p === 'urgent' || p === 'critical') return 'red';
+        if (p === 'high') return 'orange';
+        if (p === 'medium') return 'gold';
+        return 'green';
+    };
 
     if (loading) return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
     if (!project) return <div className="text-center mt-10"><Text>Project not found</Text></div>;
+
+    // Calculate project stats
+    const totalIssues = Object.values(issuesByStatus).reduce((acc, issues) => acc + issues.length, 0);
+    const totalMembers = Array.isArray(member) ? member.length : 0;
+    const totalStatuses = project.statutes?.length || 0;
 
     return (
         <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto">
                 <div className="mb-6">
                     <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)} className="mb-4">Back</Button>
-                    <Card className="shadow-sm">
+
+                    {/* Project Header Card */}
+                    <Card className="shadow-md border-l-4 border-l-blue-500">
                         <div className="flex items-start justify-between">
                             <div className="flex-1">
                                 <div className="flex items-center space-x-3 mb-3">
-                                    <FolderOutlined className="text-2xl text-blue-600" />
-                                    <Title level={2} className="m-0">{project.project.name}</Title>
-                                    <Tag color={project.project.status === 'active' ? 'green' : 'default'}>
-                                        {project.project.status === 'active' ? 'Active' : 'Inactive'}
-                                    </Tag>
-                                    <Button type="text" icon={<DeleteOutlined />} danger onClick={handleDeleteProject} />
-                                </div>
-                                <Paragraph className="text-gray-600 mb-4">{project.project.description}</Paragraph>
-                                <Space size="large">
+                                    <Avatar
+                                        size={56}
+                                        icon={<FolderOutlined />}
+                                        className="bg-gradient-to-br from-blue-500 to-blue-600"
+                                    />
                                     <div>
-                                        <Text className="text-gray-500">Category:</Text>
-                                        <Text strong className="ml-2">{project.project.category}</Text>
-                                    </div>
-                                    {project.tags && project.tags.length > 0 && (
-                                        <div>
-                                            <TagsOutlined className="text-gray-500 mr-2" />
-                                            {project.tags.map((tag, idx) => (
-                                                <Tag key={idx} color="blue">{tag}</Tag>
-                                            ))}
+                                        <div className="flex items-center space-x-3">
+                                            <Title level={2} className="m-0">{project.project.name}</Title>
+                                            <Tag
+                                                icon={project.project.status === 'active' ? <ThunderboltOutlined /> : <ClockCircleOutlined />}
+                                                color={project.project.status === 'active' ? 'success' : 'default'}
+                                            >
+                                                {project.project.status === 'active' ? 'Active' : 'Inactive'}
+                                            </Tag>
                                         </div>
-                                    )}
+                                        <Paragraph className="text-gray-600 mb-0 mt-1">{project.project.description}</Paragraph>
+                                    </div>
+                                </div>
+
+                                <Space size="large" className="mt-4">
+                                    <div className="flex items-center space-x-2">
+                                        <TagsOutlined style={{ color: '#1890ff' }} />
+                                        <Text className="text-gray-500">Category:</Text>
+                                        <Text strong className="uppercase">{project.project.category}</Text>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <StarOutlined style={{ color: '#faad14' }} />
+                                        <Text className="text-gray-500">Tags:</Text>
+                                        {project.project.tags && project.project.tags.length > 0 ? (
+                                            project.project.tags.map((tag, index) => (
+                                                <Tag key={index} color="blue">{tag}</Tag>
+                                            ))
+                                        ) : (
+                                            <Tag color="default">N/A</Tag>
+                                        )}
+                                    </div>
                                 </Space>
                             </div>
+
+                            <Tooltip title="Delete Project">
+                                <Button
+                                    type="text"
+                                    icon={<DeleteOutlined />}
+                                    danger
+                                    size="large"
+                                    onClick={handleDeleteProject}
+                                />
+                            </Tooltip>
                         </div>
                     </Card>
+
+                    {/* Stats Row */}
+                    <Row gutter={[16, 16]} className="mt-4">
+                        <Col xs={24} sm={8}>
+                            <Card className="shadow-sm text-center hover:shadow-md transition-shadow">
+                                <Space direction="vertical" size="small">
+                                    <FileTextOutlined style={{ fontSize: 32, color: '#1890ff' }} />
+                                    <Text className="text-gray-500">Total Issues</Text>
+                                    <Title level={3} className="m-0">{totalIssues}</Title>
+                                </Space>
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={8}>
+                            <Card className="shadow-sm text-center hover:shadow-md transition-shadow">
+                                <Space direction="vertical" size="small">
+                                    <TeamOutlined style={{ fontSize: 32, color: '#52c41a' }} />
+                                    <Text className="text-gray-500">Team Members</Text>
+                                    <Title level={3} className="m-0">{totalMembers}</Title>
+                                </Space>
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={8}>
+                            <Card className="shadow-sm text-center hover:shadow-md transition-shadow">
+                                <Space direction="vertical" size="small">
+                                    <RocketOutlined style={{ fontSize: 32, color: '#722ed1' }} />
+                                    <Text className="text-gray-500">Status Columns</Text>
+                                    <Title level={3} className="m-0">{totalStatuses}</Title>
+                                </Space>
+                            </Card>
+                        </Col>
+                    </Row>
                 </div>
 
-                {/* Status Columns with Drag & Drop */}
                 <Row gutter={[24]}>
                     <Col xs={24}>
                         <Card
-                            title="Status Columns"
+                            title={
+                                <Space>
+                                    <RocketOutlined style={{ color: '#1890ff' }} />
+                                    <span>Status Columns</span>
+                                    <Badge count={totalStatuses} style={{ backgroundColor: '#52c41a' }} />
+                                </Space>
+                            }
                             extra={
-                                project.statutes && project.statutes.length < 4 && (
+                                project.statutes && project.statutes.length < 6 && (
                                     <Button type="primary" icon={<PlusOutlined />} onClick={() => setStatusModalVisible(true)}>
                                         Add Status Column
                                     </Button>
                                 )
                             }
-                            className="shadow-sm">
+                            className="shadow-sm"
+                        >
                             {!project.statutes || project.statutes.length === 0 ? (
                                 <Empty
                                     image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -346,119 +465,147 @@ export default function ProjectDetail() {
                             ) : (
                                 <DragDropContext onDragEnd={handleDragEnd}>
                                     <div className="flex flex-wrap gap-4 pb-4">
-                                        {project.statutes.map((status) => (
-                                            <Card
-                                                key={status.id}
-                                                size="small"
-                                                className="bg-gray-50 border-gray-300 w-96 flex-shrink-0"
-                                                style={{ minWidth: '20rem', borderWidth: '2px' }}
-                                                title={
-                                                    <div className="flex items-center justify-between">
-                                                        <Text strong>{status.name}</Text>
-                                                        <Button
-                                                            type="text"
-                                                            icon={<DeleteOutlined />}
-                                                            danger
-                                                            onClick={async () => {
-                                                                try {
-                                                                    await api.delete(`/status/delete-status/${status.id}/${project.project.id}`, {
-                                                                        headers: { Authorization: `Bearer ${token}` }
-                                                                    });
-                                                                    message.success("Status column deleted!");
-                                                                    setProject(prev => ({
-                                                                        ...prev,
-                                                                        statutes: prev.statutes.filter(s => s.id !== status.id)
-                                                                    }));
-                                                                } catch (error) {
-                                                                    message.error(error.response?.data?.message || "Failed to delete status");
-                                                                }
-                                                            }}
-                                                        />
-                                                    </div>
-                                                }
-                                            >
-                                                <Droppable droppableId={status.id}>
-                                                    {(provided, snapshot) => (
-                                                        <div
-                                                            ref={provided.innerRef}
-                                                            {...provided.droppableProps}
-                                                            className={`space-y-2 min-h-[200px] p-2 rounded transition-colors ${snapshot.isDraggingOver ? 'bg-blue-50' : ''
-                                                                }`}
-                                                        >
-                                                            <Button
-                                                                type="dashed"
-                                                                block
-                                                                onClick={() => setIssueModal({ visible: true, statusId: status.id })}
+                                        {project.statutes.map((status) => {
+                                            const issueCount = issuesByStatus[status.id]?.length || 0;
+                                            return (
+                                                <Card
+                                                    key={status.id}
+                                                    size="small"
+                                                    className="bg-gradient-to-b from-gray-50 to-white border-2 border-gray-300 w-96 flex-shrink-0 hover:shadow-lg transition-all"
+                                                    style={{ minWidth: '20rem' }}
+                                                    title={
+                                                        <div className="flex items-center justify-between">
+                                                            <Space>
+                                                                <Text strong className="text-base">{status.name}</Text>
+                                                                <Badge
+                                                                    count={issueCount}
+                                                                    style={{ backgroundColor: '#1890ff' }}
+                                                                />
+                                                            </Space>
+                                                            <Tooltip title="Delete Status">
+                                                                <Button
+                                                                    type="text"
+                                                                    icon={<DeleteOutlined />}
+                                                                    danger
+                                                                    onClick={async () => {
+                                                                        try {
+                                                                            await api.delete(`/status/delete-status/${status.id}/${project.project.id}`, {
+                                                                                headers: { Authorization: `Bearer ${token}` }
+                                                                            });
+                                                                            message.success("Status column deleted!");
+                                                                            setProject(prev => ({
+                                                                                ...prev,
+                                                                                statutes: prev.statutes.filter(s => s.id !== status.id)
+                                                                            }));
+                                                                        } catch (error) {
+                                                                            message.error(error.response?.data?.message || "Failed to delete status");
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </Tooltip>
+                                                        </div>
+                                                    }
+                                                >
+                                                    <Droppable droppableId={status.id}>
+                                                        {(provided, snapshot) => (
+                                                            <div
+                                                                ref={provided.innerRef}
+                                                                {...provided.droppableProps}
+                                                                className={`space-y-2 min-h-[200px] p-2 rounded-lg transition-colors ${snapshot.isDraggingOver ? 'bg-blue-50 border-2 border-dashed border-blue-300' : ''
+                                                                    }`}
                                                             >
-                                                                + Create An Issue
-                                                            </Button>
+                                                                <Button
+                                                                    type="dashed"
+                                                                    block
+                                                                    icon={<PlusOutlined />}
+                                                                    className="border-blue-300 text-blue-600 hover:border-blue-500 hover:text-blue-700"
+                                                                    onClick={() => setIssueModal({ visible: true, statusId: status.id })}
+                                                                >
+                                                                    Create An Issue
+                                                                </Button>
 
-                                                            {issuesByStatus[status.id]?.length > 0 ? (
-                                                                issuesByStatus[status.id].map((issue, index) => (
-                                                                    <Draggable key={issue.id} draggableId={issue.id} index={index}>
-                                                                        {(provided, snapshot) => (
-                                                                            <div
-                                                                                ref={provided.innerRef}
-                                                                                {...provided.draggableProps}
-                                                                                {...provided.dragHandleProps}
-                                                                                className={`p-4 border rounded-lg bg-white shadow-sm flex flex-col gap-2 relative transition-shadow ${snapshot.isDragging ? 'shadow-lg rotate-2' : ''
-                                                                                    }`}
-                                                                                style={{
-                                                                                    ...provided.draggableProps.style,
-                                                                                    cursor: 'grab'
-                                                                                }}
-                                                                            >
-                                                                                <Button
-                                                                                    type="text"
-                                                                                    size="small"
-                                                                                    danger
-                                                                                    className="absolute top-2 right-2 z-10"
-                                                                                    onClick={(e) => {
-                                                                                        e.stopPropagation();
-                                                                                        handleDeleteIssue(issue.id, status.id);
+                                                                {issuesByStatus[status.id]?.length > 0 ? (
+                                                                    issuesByStatus[status.id].map((issue, index) => (
+                                                                        <Draggable key={issue.id} draggableId={issue.id} index={index}>
+                                                                            {(provided, snapshot) => (
+                                                                                <div
+                                                                                    ref={provided.innerRef}
+                                                                                    {...provided.draggableProps}
+                                                                                    {...provided.dragHandleProps}
+                                                                                    className={`p-4 border-2 rounded-lg bg-white shadow-sm flex flex-col gap-2 relative transition-all hover:border-blue-300 ${snapshot.isDragging ? 'shadow-2xl rotate-2 border-blue-400' : ''
+                                                                                        }`}
+                                                                                    style={{
+                                                                                        ...provided.draggableProps.style,
+                                                                                        cursor: 'grab'
                                                                                     }}
                                                                                 >
-                                                                                    X
-                                                                                </Button>
+                                                                                    <div className="flex items-start justify-between">
+                                                                                        <Tooltip title="Drag to move">
+                                                                                            <DragOutlined className="text-gray-400 mt-1" />
+                                                                                        </Tooltip>
+                                                                                        <Tooltip title="Delete Issue">
+                                                                                            <Button
+                                                                                                type="text"
+                                                                                                size="small"
+                                                                                                danger
+                                                                                                icon={<DeleteOutlined />}
+                                                                                                onClick={(e) => {
+                                                                                                    e.stopPropagation();
+                                                                                                    handleDeleteIssue(issue.id, status.id);
+                                                                                                }}
+                                                                                            />
+                                                                                        </Tooltip>
+                                                                                    </div>
 
-                                                                                <Text strong className="text-lg pr-6">{issue.title}</Text>
-                                                                                <Text type="secondary" className="text-sm">{issue.description}</Text>
+                                                                                    <div className="flex items-start space-x-2">
+                                                                                        <FileTextOutlined style={{ color: '#1890ff', marginTop: 4 }} />
+                                                                                        <Text strong className="text-base flex-1">{issue.title}</Text>
+                                                                                    </div>
 
-                                                                                {issue.due_date && (
-                                                                                    <Tag color="blue" className="text-xs w-fit">
-                                                                                        Due: {new Date(issue.due_date).toLocaleDateString()}
-                                                                                    </Tag>
-                                                                                )}
+                                                                                    <Text type="secondary" className="text-sm pl-6">{issue.description}</Text>
 
-                                                                                {issue.priority && (
-                                                                                    <Tag color="red" className="text-xs w-fit">
-                                                                                        Priority: {issue.priority}
-                                                                                    </Tag>
-                                                                                )}
-                                                                            </div>
-                                                                        )}
-                                                                    </Draggable>
-                                                                ))
-                                                            ) : (
-                                                                <Empty
-                                                                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                                                    description="No issues yet"
-                                                                    className="py-8"
-                                                                />
-                                                            )}
-                                                            {provided.placeholder}
-                                                        </div>
-                                                    )}
-                                                </Droppable>
-                                            </Card>
-                                        ))}
+                                                                                    <div className="flex items-center gap-2 mt-2">
+                                                                                        {issue.due_date && (
+                                                                                            <Tag icon={<CalendarOutlined />} color="blue" className="text-xs">
+                                                                                                {new Date(issue.due_date).toLocaleDateString()}
+                                                                                            </Tag>
+                                                                                        )}
+
+                                                                                        {issue.priority && (
+                                                                                            <Tag
+                                                                                                icon={getPriorityIcon(issue.priority)}
+                                                                                                color={getPriorityColor(issue.priority)}
+                                                                                                className="text-xs"
+                                                                                            >
+                                                                                                {issue.priority}
+                                                                                            </Tag>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                        </Draggable>
+                                                                    ))
+                                                                ) : (
+                                                                    <Empty
+                                                                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                                                        description="No issues yet"
+                                                                        className="py-8"
+                                                                    />
+                                                                )}
+                                                                {provided.placeholder}
+                                                            </div>
+                                                        )}
+                                                    </Droppable>
+                                                </Card>
+                                            );
+                                        })}
 
                                         {project.statutes.length < 6 && (
                                             <div className="w-96 flex-shrink-0">
                                                 <Button
                                                     type="dashed"
                                                     icon={<PlusOutlined />}
-                                                    className="w-full h-full min-h-[200px] border-2 border-dashed"
+                                                    className="w-full h-full min-h-[200px] border-2 border-dashed hover:border-blue-400 hover:text-blue-600"
                                                     onClick={() => setStatusModalVisible(true)}
                                                 >
                                                     Add New Status Column
@@ -480,39 +627,87 @@ export default function ProjectDetail() {
                         </Modal>
 
                         {/* Create Issue Modal */}
-                        <CreateIssueModal visible={issueModal.visible}
+                        <CreateIssueModal
+                            visible={issueModal.visible}
                             onSubmit={(values) => handleAddIssue(values, issueModal.statusId)}
-                            onClose={() => setIssueModal({ visible: false, statusId: null })} statusId={issueModal.statusId} projectId={project.project.id} token={token} onSuccess={(values) => handleAddIssue(values, issueModal.statusId)} />
+                            onClose={() => setIssueModal({ visible: false, statusId: null })}
+                            statusId={issueModal.statusId}
+                            projectId={project.project.id}
+                            token={token}
+                            onSuccess={(values) => handleAddIssue(values, issueModal.statusId)}
+                        />
 
                         {/* Team Members Section */}
-                        <Card title={<Space><TeamOutlined /> <span>Team Members</span></Space>}
-                            extra={<Button type="text" icon={<UserAddOutlined />} size="small" onClick={() => setInviteModalVisible(true)}>Invite</Button>}
+                        <Card
+                            title={
+                                <Space>
+                                    <TeamOutlined style={{ color: '#52c41a' }} />
+                                    <span>Team Members</span>
+                                    <Badge count={totalMembers} style={{ backgroundColor: '#52c41a' }} />
+                                </Space>
+                            }
+                            extra={
+                                <Button
+                                    type="primary"
+                                    icon={<UserAddOutlined />}
+                                    onClick={() => setInviteModalVisible(true)}
+                                >
+                                    Invite Member
+                                </Button>
+                            }
                             className="shadow-sm mt-6"
                         >
-                            {!project.project.teams_id || project.project.teams_id.length === 0 ? (
+                            {Array.isArray(member) && member.length > 0 ? (
+                                <div className="space-y-3">
+                                    {member.map((m, idx) => (
+                                        <div
+                                            key={m.id || idx}
+                                            className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-blue-200"
+                                        >
+                                            <Avatar
+                                                size="large"
+                                                icon={<UserOutlined />}
+                                                className="bg-gradient-to-br from-blue-500 to-blue-600"
+                                            />
+                                            <div className="flex-1">
+                                                <div className="flex items-center space-x-2">
+                                                    <Text strong className="block">
+                                                        {m.full_name}
+                                                    </Text>
+                                                    <Tag color="blue" className="text-xs">Member</Tag>
+                                                </div>
+                                                <Text className="text-sm text-gray-500">
+                                                    {m.email}
+                                                </Text>
+                                            </div>
+                                            {/* Silme butonu */}
+                                            <Button
+                                                type="text"
+                                                icon={<CloseOutlined />}
+                                                danger
+                                                onClick={() => handleRemoveMember(m.id)}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
                                 <Empty
                                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                                     description={
                                         <div className="text-center">
                                             <Text className="text-gray-500">No team members yet</Text>
                                             <div className="mt-2">
-                                                <Button type="primary" icon={<UserAddOutlined />} size="small" onClick={() => setInviteModalVisible(true)}>Invite Members</Button>
+                                                <Button
+                                                    type="primary"
+                                                    icon={<UserAddOutlined />}
+                                                    onClick={() => setInviteModalVisible(true)}
+                                                >
+                                                    Invite Members
+                                                </Button>
                                             </div>
                                         </div>
                                     }
                                 />
-                            ) : (
-                                <div className="space-y-3">
-                                    {project.teams_id.map((memberId, idx) => (
-                                        <div key={idx} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
-                                            <Avatar size="large" icon={<UserOutlined />} className="bg-blue-600" />
-                                            <div className="flex-1">
-                                                <Text strong className="block">Team Member {idx + 1}</Text>
-                                                <Text className="text-sm text-gray-500">member@example.com</Text>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
                             )}
                         </Card>
 
@@ -520,7 +715,7 @@ export default function ProjectDetail() {
                         <Modal title="Invite Team Member" open={inviteModalVisible} onCancel={() => setInviteModalVisible(false)} okText="Invite" confirmLoading={inviting} onOk={() => inviteForm.submit()}>
                             <Form form={inviteForm} onFinish={handleInviteMember} layout="vertical">
                                 <Form.Item label="Member Email" name="email" rules={[{ required: true, message: "Please input member email" }]}>
-                                    <Input placeholder="example@mail.com" />
+                                    <Input placeholder="example@mail.com" prefix={<UserOutlined />} />
                                 </Form.Item>
                             </Form>
                         </Modal>

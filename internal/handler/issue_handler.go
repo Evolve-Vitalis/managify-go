@@ -1,12 +1,10 @@
 package handler
 
 import (
-	"fmt"
 	"managify/constant"
 	"managify/internal/service"
 	"managify/models"
 	"managify/utils"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -43,33 +41,25 @@ func GetIssuesByStatusHandler(c *fiber.Ctx) error {
 	})
 }
 func CreateIssueHandler(c *fiber.Ctx) error {
-	fmt.Println("🚀 [CreateIssueHandler] Initialized at:", time.Now().Format(time.RFC3339))
-	fmt.Println("=====================================================")
 
 	var issue models.Issue
 
-	// Parse request body
 	if err := c.BodyParser(&issue); err != nil {
-		fmt.Println("❌ [BodyParser] Error:", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": constant.ErrBadRequest,
 		})
 	}
 
-	// Get user
 	user, ok := utils.GetUserLocal(c)
 	if !ok {
-		fmt.Println("❌ [UserLocal] Could not get user")
+
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": constant.ErrInternalServer,
 		})
 	}
-	fmt.Printf("👤 [UserLocal] UserID: %v\n", user.ID.Hex())
 
-	fmt.Println("🧠 [ServiceCall] Creating issue...")
 	res, err := service.GetIssueService().CreateIssue(&issue, user.ID)
 	if err != nil {
-		fmt.Println("❌ [ServiceError]", err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"message": constant.ErrUnauthorized,
 		})

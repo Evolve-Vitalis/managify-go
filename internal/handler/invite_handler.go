@@ -73,3 +73,25 @@ func RespondProjectInviteHandler(c *fiber.Ctx) error {
 		"invite":  invite,
 	})
 }
+
+func GetInviteHandlerById(c *fiber.Ctx) error {
+	rcvStr := c.Params("id")
+	objID, err := primitive.ObjectIDFromHex(rcvStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": constant.ErrBadRequest,
+		})
+	}
+
+	models, err := service.GetProjectInvites(objID)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": constant.ErrUnauthorized,
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": constant.SuccessFetched,
+		"data":    models,
+	})
+}

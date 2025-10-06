@@ -36,7 +36,6 @@ func GetIssueService() *IssueService {
 }
 
 func (s *IssueService) CreateIssue(issue *models.Issue, userID primitive.ObjectID) (*models.Issue, error) {
-	log.Info("You are in create issue service.")
 
 	collection := database.DB.Collection(s.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -60,16 +59,12 @@ func (s *IssueService) CreateIssue(issue *models.Issue, userID primitive.ObjectI
 		return nil, fmt.Errorf("user is not in project")
 	}
 
-	logrus.Info("status id", issue.StatusID)
-
 	issue.ID = primitive.NewObjectID()
 
-	res, err := collection.InsertOne(ctx, issue)
-	if err != nil {
+	if _, err := collection.InsertOne(ctx, issue); err != nil {
 		log.Errorf("Failed to insert issue into DB: %v", err)
 		return nil, err
 	}
-	log.Infof("Inserted issue ID: %v", res.InsertedID)
 
 	projectLogId := primitive.NewObjectID()
 	projectLog := models.ProjectLog{
@@ -82,8 +77,6 @@ func (s *IssueService) CreateIssue(issue *models.Issue, userID primitive.ObjectI
 	if err := GetLogService().CreateLog(&projectLog); err != nil {
 		return nil, err
 	}
-
-	log.Infof(issue.Description)
 
 	return issue, nil
 }
@@ -144,9 +137,6 @@ func (s *IssueService) UpdateIssueStatus(issueID, newStatusID, userID primitive.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	fmt.Println("issueID ->" + issueID.Hex())
-	fmt.Println("newStatusID ->" + newStatusID.Hex())
-
 	var issue models.Issue
 	if err := collection.FindOne(ctx, bson.M{"_id": issueID}).Decode(&issue); err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -165,12 +155,9 @@ func (s *IssueService) UpdateIssueStatus(issueID, newStatusID, userID primitive.
 	if err != nil {
 		return nil, fmt.Errorf("failed to update issue status: %w", err)
 	}
-	fmt.Println("Matched:", res.MatchedCount, "Modified:", res.ModifiedCount)
 	if res.MatchedCount == 0 {
 		return nil, fmt.Errorf("no matching issue found to update")
 	}
-
-	fmt.Println(res.ModifiedCount)
 
 	projectLog := models.ProjectLog{
 		ID:        primitive.NewObjectID(),
@@ -183,10 +170,7 @@ func (s *IssueService) UpdateIssueStatus(issueID, newStatusID, userID primitive.
 		return nil, err
 	}
 
-	fmt.Println(projectLog)
-
 	issue.StatusID = newStatusID
 
-	fmt.Println(issue)
 	return &issue, nil
 }

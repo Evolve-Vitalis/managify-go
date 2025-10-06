@@ -19,16 +19,18 @@ const (
 
 	// Project endpoints
 
-	ProjectBase   = version + "/project"
-	ProjectCreate = "/create-project"
-	ProjectDelete = "/delete-project/:id"
-	ProjectGet    = "/projects/:id"
+	ProjectBase         = version + "/project"
+	ProjectCreate       = "/create-project"
+	ProjectDelete       = "/delete-project/:id"
+	ProjectGet          = "/projects/:id"
+	ProjectMemberDelete = "/projects/member/:memberId"
 
 	// Project invite endpoints
 
 	InviteBase    = version + "/invite"
 	InviteCreate  = "/project-invite"
 	InviteRespond = "/project-invite/:inviteId/respond"
+	InviteGetById = "/project-invite/:id"
 
 	// Project role endpoints
 
@@ -52,5 +54,5 @@ const (
 
 	// Log endpoint
 	LoggerBase = version + "/logger"
-	LoggerGet  = "/:projectId"
+	LoggerGet  = "/:userId"
 )

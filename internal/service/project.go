@@ -13,6 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ProjectService struct {
@@ -54,7 +55,7 @@ func (s *ProjectService) CreateProject(project *models.Project, user *models.Use
 
 	filter := bson.M{"_id": user.ID}
 	if subscription.PlanType == models.PlanBasic {
-		filter["project_size"] = bson.M{"$lt": 3} // sadece 3’ten azsa
+		filter["project_size"] = bson.M{"$lt": 3}
 	}
 
 	update := bson.M{"$inc": bson.M{"project_size": 1}}
@@ -153,47 +154,23 @@ func (s *ProjectService) DeleteProjectById(objID primitive.ObjectID, user *model
 	return nil
 }
 
-func increaseProjectSize(ownerID primitive.ObjectID) error {
-	log.Debugf("increaseProjectSize called for ownerID=%s", ownerID.Hex())
-
-	us := GetUserService()
-	collection := database.DB.Collection(us.Collection)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	update := bson.M{
-		"$inc": bson.M{"project_size": 1},
-	}
-
-	res, err := collection.UpdateOne(ctx, bson.M{"_id": ownerID}, update)
-	if err != nil {
-		log.WithError(err).Error("Failed to update project_size")
-		return fmt.Errorf("failed to update project size: %v", err)
-	}
-
-	if res.MatchedCount == 0 {
-		log.Warnf("User not found while increasing project size: %s", ownerID.Hex())
-		return fmt.Errorf("user not found")
-	}
-
-	log.Infof("Project size increased for user %s, matchedCount=%d, modifiedCount=%d", ownerID.Hex(), res.MatchedCount, res.ModifiedCount)
-	return nil
-}
-
 func (s *ProjectService) GetProject(projectID primitive.ObjectID, user *models.User) (*models.Project, error) {
 
 	collection := database.DB.Collection(s.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	log.Infof("Searching project %s for user %s", projectID.Hex(), user.ID.Hex())
 
 	var project models.Project
 	err := collection.FindOne(ctx, bson.M{
 		"_id": projectID,
 		"$or": []bson.M{
 			{"owner_id": user.ID},
-			{"team": user.ID},
+			{"team": bson.M{"$in": []primitive.ObjectID{user.ID}}},
 		},
 	}).Decode(&project)
+
+	fmt.Println(err)
 
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -245,7 +222,6 @@ func (s *ProjectService) IsUserInProject(userID, projectID primitive.ObjectID) (
 
 	return count > 0, nil
 }
-
 func (s *ProjectService) GetProjectsByUserId(userIDHex string) ([]*models.Project, error) {
 	userObjID, err := primitive.ObjectIDFromHex(userIDHex)
 	if err != nil {
@@ -256,7 +232,14 @@ func (s *ProjectService) GetProjectsByUserId(userIDHex string) ([]*models.Projec
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	cursor, err := collection.Find(ctx, bson.M{"owner_id": userObjID})
+	filter := bson.M{
+		"$or": []bson.M{
+			{"owner_id": userObjID},
+			{"team": bson.M{"$in": []primitive.ObjectID{userObjID}}},
+		},
+	}
+
+	cursor, err := collection.Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -271,9 +254,87 @@ func (s *ProjectService) GetProjectsByUserId(userIDHex string) ([]*models.Projec
 		projects = append(projects, &project)
 	}
 
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
 	if projects == nil {
 		projects = []*models.Project{}
 	}
 
+	log.Infof("Fetched %d projects for user %s", len(projects), userObjID.Hex())
+
 	return projects, nil
+}
+
+func (s *ProjectService) GetProjectWithTeam(projectID primitive.ObjectID, user *models.User) (*models.Project, []models.User, error) {
+	collection := database.DB.Collection(s.Collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var project models.Project
+	err := collection.FindOne(ctx, bson.M{
+		"_id": projectID,
+		"$or": []bson.M{
+			{"owner_id": user.ID},
+			{"team": bson.M{"$in": []primitive.ObjectID{user.ID}}},
+		},
+	}, options.FindOne().SetProjection(bson.M{
+		"password": 0,
+	})).Decode(&project)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil, fmt.Errorf("project not found or access denied")
+		}
+		return nil, nil, err
+	}
+
+	var teamMembers []models.User
+	if len(project.TeamIDs) > 0 {
+		userCollection := database.DB.Collection("users")
+		cursor, err := userCollection.Find(ctx, bson.M{"_id": bson.M{"$in": project.TeamIDs}})
+		if err == nil {
+			defer cursor.Close(ctx)
+			for cursor.Next(ctx) {
+				var member models.User
+				if err := cursor.Decode(&member); err == nil {
+					teamMembers = append(teamMembers, member)
+				}
+			}
+		}
+	}
+
+	return &project, teamMembers, nil
+}
+
+func (s *ProjectService) DeleteMemberFromProjectById(userId, memberId primitive.ObjectID) error {
+	collection := database.DB.Collection(s.Collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var project models.Project
+	err := collection.FindOne(ctx, bson.M{"owner_id": userId}).Decode(&project)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch project")
+		return err
+	}
+
+	res, err := collection.UpdateOne(
+		ctx,
+		bson.M{"owner_id": userId},
+		bson.M{"$pull": bson.M{"team": memberId}},
+	)
+
+	if err != nil {
+		log.WithError(err).Error("failed to fetch project")
+		return err
+	}
+
+	if res.ModifiedCount == 0 {
+		return err
+	}
+
+	return nil
+
 }
