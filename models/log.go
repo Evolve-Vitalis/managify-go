@@ -6,7 +6,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// ProjectLog MongoDB'deki log belgelerini temsil eder
 type ProjectLog struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	ProjectID string             `bson:"project_id" json:"project_id"`
