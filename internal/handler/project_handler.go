@@ -6,6 +6,7 @@ import (
 	"managify/internal/service"
 	"managify/models"
 	"managify/utils"
+	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -81,7 +82,7 @@ type StatusWithIssues struct {
 }
 
 func GetProjectHandler(c *fiber.Ctx) error {
-
+	start := time.Now()
 	projectIDHex := c.Params("id")
 	projectID, err := primitive.ObjectIDFromHex(projectIDHex)
 	if err != nil {
@@ -98,22 +99,41 @@ func GetProjectHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": constant.ErrForbidden})
 	}
 
-	statuses, err := service.GetStatusService().GetStatusesByProjectId(projectID)
-	if err != nil {
+	var (
+		statuses    []*models.Status
+		teamMembers []models.User
+		statusErr   error
+		teamErr     error
+		wg          sync.WaitGroup
+	)
+
+	wg.Add(2)
+
+	// Statuses parallel fetch
+	go func() {
+		defer wg.Done()
+		statuses, statusErr = service.GetStatusService().GetStatusesByProjectId(projectID)
+	}()
+
+	// Team members parallel fetch
+	go func() {
+		defer wg.Done()
+		_, teamMembers, teamErr = service.GetProjectService().GetProjectWithTeam(projectID, user)
+	}()
+
+	wg.Wait()
+
+	if statusErr != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": constant.ErrInternalServer})
 	}
-
-	_, teamMembers, err := service.GetProjectService().GetProjectWithTeam(projectID, user)
-	if err != nil {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": constant.ErrForbidden})
+	if teamErr != nil {
+		teamMembers = []models.User{}
 	}
 
 	var statusesWithIssues []StatusWithIssues
 	for _, status := range statuses {
-		_, err := service.GetIssueService().GetIssuesByStatusID(status.ID)
-		if err != nil {
+		if _, err := service.GetIssueService().GetIssuesByStatusID(status.ID); err != nil {
 			fmt.Println(err)
-
 		}
 
 		statusesWithIssues = append(statusesWithIssues, StatusWithIssues{
@@ -131,6 +151,10 @@ func GetProjectHandler(c *fiber.Ctx) error {
 		"statutes": statusesWithIssues,
 		"members":  teamMembers,
 	}
+
+	elapsed := time.Since(start)
+
+	fmt.Println(elapsed)
 
 	return c.JSON(fiber.Map{
 		"message": constant.SuccessFetched,
