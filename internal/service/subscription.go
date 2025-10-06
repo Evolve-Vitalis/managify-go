@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"managify/database" // DB bağlantını import etmeyi unutma
+	"managify/database"
 	"managify/models"
 
 	"github.com/sirupsen/logrus"

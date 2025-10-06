@@ -135,7 +135,6 @@ func (s *ProjectService) DeleteProjectById(objID primitive.ObjectID, user *model
 		log.WithError(err).Error("Error finding project")
 		return err
 	}
-	log.Debugf("Project found: %+v", project)
 
 	if !user.IsAdmin && project.OwnerID != user.ID {
 		log.Warnf("Unauthorized delete attempt by user %s on project %s", user.ID.Hex(), objID.Hex())
