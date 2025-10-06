@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"managify/database"
 	"managify/models"
@@ -10,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type LogService struct {
@@ -70,6 +72,34 @@ func (s *LogService) GetLogsByProjectID(projectID string) ([]models.ProjectLog, 
 			continue
 		}
 		logs = append(logs, logEntry)
+	}
+
+	return logs, nil
+}
+
+func (s *LogService) GetLogsByUserId(userID string) ([]models.ProjectLog, error) {
+
+	dbCollection := database.DB.Collection(s.Collection)
+	opts := options.Find().SetSort(bson.D{{"timestamp", -1}}).SetLimit(5)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"user_id": userID}
+
+	cursor, err := dbCollection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var logs []models.ProjectLog
+	for cursor.Next(ctx) {
+		var logEntry models.ProjectLog
+		if err := cursor.Decode(&logEntry); err != nil {
+			continue
+		}
+		logs = append(logs, logEntry)
+		fmt.Println(logs)
 	}
 
 	return logs, nil
