@@ -8,25 +8,25 @@ export default function Stats() {
                 <Row gutter={[24, 24]} className="text-center">
                     <Col xs={24} sm={6}>
                         <div className="text-white">
-                            <Title level={2} className="text-white mb-2">100+</Title>
+                            <Title level={2} className="text-white mb-2">0+</Title>
                             <Text className="text-blue-100 text-lg">Active Projects</Text>
                         </div>
                     </Col>
                     <Col xs={24} sm={6}>
                         <div className="text-white">
-                            <Title level={2} className="text-white mb-2">200+</Title>
+                            <Title level={2} className="text-white mb-2">0+</Title>
                             <Text className="text-blue-100 text-lg">Happy Users</Text>
                         </div>
                     </Col>
                     <Col xs={24} sm={6}>
                         <div className="text-white">
-                            <Title level={2} className="text-white mb-2">1500+</Title>
+                            <Title level={2} className="text-white mb-2">0+</Title>
                             <Text className="text-blue-100 text-lg">Completed Tasks</Text>
                         </div>
                     </Col>
                     <Col xs={24} sm={6}>
                         <div className="text-white">
-                            <Title level={2} className="text-white mb-2">92%</Title>
+                            <Title level={2} className="text-white mb-2">0%</Title>
                             <Text className="text-blue-100 text-lg">Customer Satisfaction</Text>
                         </div>
                     </Col>
