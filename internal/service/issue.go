@@ -60,19 +60,10 @@ func (s *IssueService) CreateIssue(issue *models.Issue, userID primitive.ObjectI
 		return nil, fmt.Errorf("user is not in project")
 	}
 
-	// Status validation
-	isStatusValid, err := GetStatusService().IsStatusInProject(issue.StatusID, issue.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-	if !isStatusValid {
-		return nil, fmt.Errorf("status is not part of the project")
-	}
+	logrus.Info("status id", issue.StatusID)
 
-	// Yeni issue ID oluştur
 	issue.ID = primitive.NewObjectID()
 
-	// Issue'yu issues collection'a ekle
 	res, err := collection.InsertOne(ctx, issue)
 	if err != nil {
 		log.Errorf("Failed to insert issue into DB: %v", err)
@@ -91,6 +82,8 @@ func (s *IssueService) CreateIssue(issue *models.Issue, userID primitive.ObjectI
 	if err := GetLogService().CreateLog(&projectLog); err != nil {
 		return nil, err
 	}
+
+	log.Infof(issue.Description)
 
 	return issue, nil
 }
@@ -128,7 +121,7 @@ func (s *IssueService) GetIssuesByStatusID(statusID primitive.ObjectID) ([]*mode
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	cursor, err := collection.Find(ctx, bson.M{"assigned_id": statusID})
+	cursor, err := collection.Find(ctx, bson.M{"status_id": statusID})
 	if err != nil {
 		return nil, err
 	}
@@ -160,14 +153,6 @@ func (s *IssueService) UpdateIssueStatus(issueID, newStatusID, userID primitive.
 			return nil, fmt.Errorf("issue not found")
 		}
 		return nil, err
-	}
-
-	isStatusValid, err := GetStatusService().IsStatusInProject(newStatusID, issue.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-	if !isStatusValid {
-		return nil, fmt.Errorf("status is not part of the project")
 	}
 
 	update := bson.M{
