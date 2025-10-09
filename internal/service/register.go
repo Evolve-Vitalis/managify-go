@@ -2,11 +2,15 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"managify/database"
 	"managify/dto/request"
 	"managify/dto/response"
 	"managify/internal/middleware"
+	"net/smtp"
+	"os"
 
 	"managify/models"
 
@@ -34,6 +38,7 @@ func init() {
 	})
 	log.SetLevel(logrus.DebugLevel)
 }
+
 func GetUserService() *UserService {
 	if userService == nil {
 		userService = &UserService{Collection: "users"}
@@ -43,8 +48,37 @@ func GetUserService() *UserService {
 	return userService
 }
 
-func (s *UserService) CreateUser(user *models.User) (*models.User, string, error) {
+func generateToken(n int) (string, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
+}
 
+// E-posta gönderici (örnek, SMTP ayarlarını kendine göre düzenle)
+func sendVerificationEmail(email, token string) error {
+
+	from := os.Getenv("SMTP_FROM")
+	pass := os.Getenv("SMTP_PASSWORD")
+	smtpHost := os.Getenv("SMTP_HOST")
+	smtpPort := os.Getenv("SMTP_PORT")
+
+	fmt.Println(from, pass, smtpHost, smtpPort)
+
+	to := email
+	msg := "Subject: Email Verification\n\nClick to verify: " + "http://localhost:5173" + "/verify?token=" + token
+
+	fmt.Println(msg)
+
+	addr := smtpHost + ":" + smtpPort
+	return smtp.SendMail(addr,
+		smtp.PlainAuth("", from, pass, smtpHost),
+		from, []string{to}, []byte(msg))
+}
+
+func (s *UserService) CreateUser(user *models.User) (*models.User, string, error) {
 	log.Infof("Attempting to create user: %s", user.Email)
 
 	collection := database.DB.Collection(s.Collection)
@@ -59,6 +93,15 @@ func (s *UserService) CreateUser(user *models.User) (*models.User, string, error
 	user.Password = string(hashedPassword)
 	user.ID = primitive.NewObjectID()
 
+	verifyToken, err := generateToken(32)
+	if err != nil {
+		return nil, "", err
+	}
+	user.VerificationToken = verifyToken
+	user.IsVerified = false
+
+	fmt.Println("Verify Token: ", verifyToken, "VerificationToken", user.VerificationToken)
+
 	_, err = collection.InsertOne(ctx, user)
 	if err != nil {
 		log.Errorf("Failed to insert user into DB: %v", err)
@@ -71,10 +114,40 @@ func (s *UserService) CreateUser(user *models.User) (*models.User, string, error
 		return nil, "", err
 	}
 
+	go sendVerificationEmail(user.Email, verifyToken)
+
 	user.Password = ""
-	log.Infof("User created successfully: %s", user.Email)
 
 	return user, tokenString, nil
+}
+
+func (s *UserService) VerifyEmail(token string) (*models.User, error) {
+	collection := database.DB.Collection(s.Collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	fmt.Println("VerifyEmail method initiliazed with token:", token)
+
+	var user models.User
+	err := collection.FindOne(ctx, bson.M{"verificationtoken": token}).Decode(&user)
+	if err != nil {
+		fmt.Println("Error finding user with token:", err)
+		return nil, err
+	}
+
+	fmt.Println("User found for verification:", user.Email)
+
+	update := bson.M{"$set": bson.M{"isverified": true, "verificationtoken": ""}}
+	_, err = collection.UpdateOne(ctx, bson.M{"_id": user.ID}, update)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("User verified:", user.Email)
+	user.IsVerified = true
+	user.VerificationToken = ""
+
+	fmt.Println("User güncellendi:", user.Email)
+	return &user, nil
 }
 
 func (s *UserService) Login(req *request.UserLoginRequest) (*response.UserLoginResponse, error) {

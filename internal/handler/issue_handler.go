@@ -70,7 +70,6 @@ func CreateIssueHandler(c *fiber.Ctx) error {
 		"data":    res,
 	})
 }
-
 func DeleteIssueHandler(c *fiber.Ctx) error {
 	user, ok := utils.GetUserLocal(c)
 	if !ok {
@@ -98,7 +97,6 @@ func DeleteIssueHandler(c *fiber.Ctx) error {
 		"message": constant.SuccessDeleted,
 	})
 }
-
 func UpdateIssueStatusHandler(c *fiber.Ctx) error {
 
 	user, ok := utils.GetUserLocal(c)

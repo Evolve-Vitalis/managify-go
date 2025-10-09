@@ -14,6 +14,7 @@ import PublicRoute from "./content/PublicRoute";
 import { Toaster } from "react-hot-toast";
 import ProjectDetail from "./components/project/DetailProject";
 import Profile from "./components/main/Profile";
+import VerifyEmail from "./components/verify/VerifyEmail";
 
 const isElectron = window?.process?.versions?.electron;
 
@@ -25,6 +26,11 @@ export default function App() {
       <RouterComponent>
         <Routes>
           <Route path="/" element={<ManagifyLandingPage />} />
+          <Route path="/verify" element={
+            <PublicRoute>
+              <VerifyEmail />
+            </PublicRoute>
+          } />
           <Route
             path="/register"
             element={

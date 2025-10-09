@@ -9,6 +9,8 @@ const (
 	UserAuth     = "/auth"
 	UserGetById  = "/:id"
 
+	UserVerifyEmail = "/verify-email"
+
 	// Admin endpoints
 	AdminBase        = version + "/admin"
 	AdminGetUsers    = "/get-users"

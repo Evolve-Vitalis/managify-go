@@ -111,13 +111,29 @@ func GetUserByIdHandler(c *fiber.Ctx) error {
 	}
 
 	data := fiber.Map{
-		"user":         user,
-		"project":      project,
-		"subscription": sub,
+		"user":            user,
+		"isVerified":      user.IsVerified,
+		"validationToken": user.VerificationToken,
+		"project":         project,
+		"subscription":    sub,
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": constant.SuccessOperation,
 		"data":    data,
 	})
+}
+func VerifyEmailHandler(c *fiber.Ctx) error {
+	token := c.Query("token")
+
+	if token == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Token missing"})
+	}
+
+	user, err := service.GetUserService().VerifyEmail(token)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid or expired token"})
+	}
+
+	return c.JSON(fiber.Map{"message": "Email verified", "user": user.Email})
 }

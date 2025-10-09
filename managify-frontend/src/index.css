@@ -3,3 +3,32 @@
 @tailwind utilities;
 
 
+/* Genel yazı renkleri */
+body {
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Dark mode overrides */
+[data-theme='dark'] .ant-card,
+[data-theme='dark'] .ant-modal-content {
+  background-color: #1f1f1f !important;
+  color: #f0f0f0 !important;
+}
+
+[data-theme='dark'] .ant-typography,
+[data-theme='dark'] .ant-tag,
+[data-theme='dark'] .ant-input,
+[data-theme='dark'] .ant-btn {
+  color: #f0f0f0 !important;
+}
+
+/* Tailwind sabit gri yazıların yerine */
+[data-theme='dark'] .text-gray-500,
+[data-theme='dark'] .text-gray-600 {
+  color: #cccccc !important;
+}
+
+[data-theme='dark'] .bg-white,
+[data-theme='dark'] .bg-gray-50 {
+  background-color: #1f1f1f !important;
+}
