@@ -15,6 +15,7 @@ import { Toaster } from "react-hot-toast";
 import ProjectDetail from "./components/project/DetailProject";
 import Profile from "./components/main/Profile";
 import VerifyEmail from "./components/verify/VerifyEmail";
+import { ThemeProvider } from "./content/ThemeContent";
 
 const isElectron = window?.process?.versions?.electron;
 
@@ -22,6 +23,7 @@ export default function App() {
   const RouterComponent = isElectron ? HashRouter : BrowserRouter;
 
   return (
+    <ThemeProvider>
     <AuthProvider>
       <RouterComponent>
         <Routes>
@@ -94,5 +96,6 @@ export default function App() {
 
       <Toaster position="top-right" reverseOrder={false} />
     </AuthProvider>
+    </ThemeProvider>
   );
 }

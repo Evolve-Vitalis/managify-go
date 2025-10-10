@@ -53,7 +53,6 @@ func (s *UserService) GetAllUsers() ([]models.User, error) {
 }
 
 func (s *UserService) GetUserById(id string) (*models.User, error) {
-	log.Debugf("GetUserById called with id=%s", id)
 
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -78,7 +77,6 @@ func (s *UserService) GetUserById(id string) (*models.User, error) {
 		return nil, err
 	}
 
-	log.Infof("GetUserById succeeded: %s", id)
 	return &user, nil
 }
 

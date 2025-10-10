@@ -55,11 +55,18 @@ import { useNavigate } from 'react-router-dom';
 import DashboardHeader from './DashboardHeader';
 import EmailVerificationGuard from './EmailVerificationGuard';
 import { toast } from 'react-hot-toast';
+import { useTheme } from '../../content/ThemeContent'; // Import useTheme
+
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 
 export default function ManagifyDashboard() {
     const navigate = useNavigate();
+    const { isDarkMode, toggleTheme } = useTheme(); // Use context instead of local state
+    
+    console.log("isDarkMode in Dashboard:", isDarkMode);
+    console.log("toggleTheme in Dashboard:", toggleTheme);
+
     const [userData, setUserData] = useState(null);
     const [userProjects, setUserProjects] = useState([]);
     const [recentIssues, setRecentIssues] = useState([]);
@@ -67,10 +74,6 @@ export default function ManagifyDashboard() {
     const [invites, setInvites] = useState([]);
     const [invitesLoading, setInvitesLoading] = useState(false);
     const [recentLogs, setRecentLogs] = useState([]);
-    const [isDarkMode, setIsDarkMode] = useState(() => {
-        const saved = localStorage.getItem('theme');
-        return saved === 'dark';
-    });
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -182,17 +185,10 @@ export default function ManagifyDashboard() {
         window.location.href = "/login";
     };
 
-    const toggleTheme = () => {
-        const newTheme = !isDarkMode;
-        setIsDarkMode(newTheme);
-        localStorage.setItem('theme', newTheme ? 'dark' : 'light');
-    };
-
     const handleProfile = () => {
         navigate("/profile");
     };
 
-    // Log icon mapper
     const getLogIcon = (message) => {
         const msg = message.toLowerCase();
         if (msg.includes('created')) return <PlusOutlined style={{ color: '#52c41a' }} />;
@@ -258,12 +254,9 @@ export default function ManagifyDashboard() {
         </div>
     );
 
-    // Calculate stats
     const activeProjects = userProjects.filter(p => p.status === 'active').length;
     const totalIssues = userProjects.reduce((acc, p) => acc + (p.issues_id?.length || 0), 0);
     const totalMembers = userProjects.reduce((acc, p) => acc + (p.teams_id?.length || 0), 0);
-    const projectLimitPercentage = subscriptionData.plan_type === "BASIC" ? (userData.project_size / 3) * 100 :
-        subscriptionData.plan_type === "PREMIUM" ? (userData.project_size / 10) * 100 : 0;
 
     return (
         <ConfigProvider
@@ -280,7 +273,6 @@ export default function ManagifyDashboard() {
         >
             <div className={isDarkMode ? "dark" : ""}>
                 <Layout className={`min-h-screen ${isDarkMode ? 'bg-[#0d0d0d]' : 'bg-gray-50'}`}>
-                    {/* Header */}
                     <Header className={`shadow-sm border-b px-6 flex items-center justify-between ${isDarkMode ? 'bg-[#0d0d0d] border-gray-700' : 'bg-white'}`}>
                         <div className="flex items-center space-x-2">
                             <ProjectOutlined className="text-2xl text-blue-600" />
@@ -326,7 +318,6 @@ export default function ManagifyDashboard() {
                         </div>
                     </Header>
 
-                    {/* Content */}
                     <Content className={`p-6 transition-colors ${isDarkMode ? 'bg-[#0d0d0d] text-gray-200' : 'bg-gray-50 text-gray-800'}`}>
                         <div className="max-w-7xl mx-auto">
                             <DashboardHeader
@@ -335,7 +326,6 @@ export default function ManagifyDashboard() {
                                 subscriptionData={subscriptionData}
                             />
 
-                            {/* Plan Limit Alert */}
                             {subscriptionData.plan_type === 'BASIC' && userData.project_size >= 3 && (
                                 <Alert
                                     message="Plan Limit Approaching"
@@ -354,7 +344,6 @@ export default function ManagifyDashboard() {
                                 />
                             )}
 
-                            {/* Stats Cards */}
                             <Row gutter={[16, 16]} className="mb-6">
                                 {[
                                     { title: "Total Projects", value: userProjects.length, icon: <ProjectOutlined style={{ color: '#1890ff' }} />, color: '#1890ff' },
@@ -376,7 +365,6 @@ export default function ManagifyDashboard() {
                             </Row>
 
                             <Row gutter={[24, 24]}>
-                                {/* My Projects */}
                                 <Col xs={24} lg={16}>
                                     <Card
                                         title={<Space><ProjectOutlined style={{ color: '#1890ff' }} />My Projects</Space>}
@@ -451,9 +439,7 @@ export default function ManagifyDashboard() {
                                     </Card>
                                 </Col>
 
-                                {/* Sidebar */}
                                 <Col xs={24} lg={8}>
-                                    {/* Recent Activity */}
                                     <Card title={<Space><CalendarOutlined style={{ color: '#722ed1' }} />Recent Activity</Space>} className="mb-6">
                                         <List
                                             dataSource={recentLogs}
@@ -474,7 +460,6 @@ export default function ManagifyDashboard() {
                                         />
                                     </Card>
 
-                                    {/* Subscription Details */}
                                     <Card title={<Space><StarOutlined style={{ color: '#faad14' }} />Subscription Details</Space>}>
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center">
@@ -508,14 +493,11 @@ export default function ManagifyDashboard() {
                                 </Col>
                             </Row>
                         </div>
-
                     </Content>
-
                 </Layout>
             </div>
         </ConfigProvider>
     );
-
 }
 
 const formatDate = (isoString) => {
