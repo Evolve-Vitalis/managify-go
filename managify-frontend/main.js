@@ -11,6 +11,13 @@ function createWindow() {
         height: 900,
         fullscreen: false,
         title: "Managify",
+        titleBarOverlay: {
+            color: '#1f1f1f',
+            symbolColor: '#ffffff',
+            height: 30,
+        },
+        autoHideMenuBar: true,
+        trafficLightPosition: { x: 15, y: 15 },
         roundedCorners: true,
         webPreferences: {
             nodeIntegration: true,

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import {
     Layout,
     Button,
@@ -56,6 +56,7 @@ import DashboardHeader from './DashboardHeader';
 import EmailVerificationGuard from './EmailVerificationGuard';
 import { toast } from 'react-hot-toast';
 import { useTheme } from '../../content/ThemeContent'; // Import useTheme
+import { AuthContext } from '../../content/AuthContent';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -63,7 +64,8 @@ const { Title, Text } = Typography;
 export default function ManagifyDashboard() {
     const navigate = useNavigate();
     const { isDarkMode, toggleTheme } = useTheme(); // Use context instead of local state
-    
+    const { logout } = useContext(AuthContext);
+
     console.log("isDarkMode in Dashboard:", isDarkMode);
     console.log("toggleTheme in Dashboard:", toggleTheme);
 
@@ -181,8 +183,7 @@ export default function ManagifyDashboard() {
     const getPlanIcon = (plan) => plan === 'PRO' ? <CrownOutlined /> : plan === 'PREMIUM' ? <TrophyOutlined /> : null;
 
     const handleLogout = () => {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        logout(); 
     };
 
     const handleProfile = () => {

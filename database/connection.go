@@ -13,17 +13,17 @@ import (
 var DB *mongo.Database
 
 func Connect() error {
-
-	uri := fmt.Sprintf("mongodb://%s:%s@%s:27017",
-		os.Getenv("MONGO_USER"),
-		os.Getenv("MONGO_PASSWORD"),
-		os.Getenv("MONGO_HOST"),
-	)
+	// MongoDB Atlas URI
+	uri := os.Getenv("MONGO_URI")
+	if uri == "" {
+		return fmt.Errorf("MONGO_URI environment variable not set")
+	}
 
 	clientOptions := options.Client().ApplyURI(uri)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		return fmt.Errorf("failed to connect to MongoDB: %w", err)
@@ -33,9 +33,13 @@ func Connect() error {
 		return fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
-	fmt.Println(clientOptions.GetURI())
 	fmt.Println("MongoDB connected successfully!")
 
-	DB = client.Database(os.Getenv("MONGO_DB"))
+	dbName := os.Getenv("MONGO_DB")
+	if dbName == "" {
+		return fmt.Errorf("MONGO_DB environment variable not set")
+	}
+
+	DB = client.Database(dbName)
 	return nil
 }

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, HashRouter, Routes, Route, BrowserRouter } from "react-router-dom";
+import { HashRouter, BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Login from "./components/login/Login";
 import Register from "./components/register/Register";
@@ -24,78 +24,78 @@ export default function App() {
 
   return (
     <ThemeProvider>
-    <AuthProvider>
       <RouterComponent>
-        <Routes>
-          <Route path="/" element={<ManagifyLandingPage />} />
-          <Route path="/verify" element={
-            <PublicRoute>
-              <VerifyEmail />
-            </PublicRoute>
-          } />
-          <Route
-            path="/register"
-            element={
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<ManagifyLandingPage />} />
+            <Route path="/verify" element={
               <PublicRoute>
-                <Register />
+                <VerifyEmail />
               </PublicRoute>
-            }
-          />
+            } />
+            <Route
+              path="/register"
+              element={
+                <PublicRoute>
+                  <Register />
+                </PublicRoute>
+              }
+            />
 
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/projects/:id"
-            element={
-              <ProtectedRoute>
-                <ProjectDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/create-project"
-            element={
-              <ProtectedRoute>
-                <CreateProject />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/plans"
-            element={
-              <ProtectedRoute>
-                <PlanCards />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+            <Route
+              path="/projects/:id"
+              element={
+                <ProtectedRoute>
+                  <ProjectDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/create-project"
+              element={
+                <ProtectedRoute>
+                  <CreateProject />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/plans"
+              element={
+                <ProtectedRoute>
+                  <PlanCards />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+
+          <Toaster position="top-right" reverseOrder={false} />
+        </AuthProvider>
       </RouterComponent>
-
-      <Toaster position="top-right" reverseOrder={false} />
-    </AuthProvider>
     </ThemeProvider>
   );
 }

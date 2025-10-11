@@ -9,11 +9,12 @@ export default function EmailVerificationGuard({ token, userData, isDarkMode }) 
   const handleResendEmail = async () => {
     setIsResending(true);
     try {
+      console.log("token inside resend email" + token)
       await api.get('/users/verify-email', {
         params: { token }
       });
+      console.log("given token" + token)
       message.success('Verification email sent! Please check your inbox.');
-      window.location.reload();
     } catch (error) {
       message.error('Failed to send verification email. Please try again.');
       console.error(error);
@@ -36,14 +37,7 @@ export default function EmailVerificationGuard({ token, userData, isDarkMode }) 
               Your email address <strong>{userData?.email}</strong> is not verified yet.
               Please verify your email to access all features including creating projects and editing your profile.
             </p>
-            <Button
-              type="primary"
-              icon={<MailOutlined />}
-              onClick={handleResendEmail}
-              loading={isResending}
-            >
-              Resend Verification Email
-            </Button>
+            <p className=' text-sm'>After registering, you’ll receive an email to verify your account. If you haven’t received it yet, please log out and log back in — we’ll send the verification email again!</p>
           </div>
         }
         type="warning"

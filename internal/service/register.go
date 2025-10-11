@@ -68,7 +68,18 @@ func sendVerificationEmail(email, token string) error {
 	fmt.Println(from, pass, smtpHost, smtpPort)
 
 	to := email
-	msg := "Subject: Email Verification\n\nClick to verify: " + "http://localhost:5173" + "/verify?token=" + token
+	msg := "Subject: Email Verification\n" +
+		"MIME-version: 1.0;\n" +
+		"Content-Type: text/html; charset=\"UTF-8\";\n\n" +
+		"<html>" +
+		"<body>" +
+		"<h2>Verify Your Email</h2>" +
+		"<p>Click the button below to verify your account:</p>" +
+		"<a href='http://localhost:5173/verify?token=" + token + "' " +
+		"style='display:inline-block;padding:10px 20px;background-color:#4CAF50;color:white;text-decoration:none;border-radius:5px;'>Verify Email</a>" +
+		"<p>If you did not create an account, you can ignore this email.</p>" +
+		"</body>" +
+		"</html>"
 
 	fmt.Println(msg)
 
@@ -100,8 +111,6 @@ func (s *UserService) CreateUser(user *models.User) (*models.User, string, error
 	user.VerificationToken = verifyToken
 	user.IsVerified = false
 
-	fmt.Println("Verify Token: ", verifyToken, "VerificationToken", user.VerificationToken)
-
 	_, err = collection.InsertOne(ctx, user)
 	if err != nil {
 		log.Errorf("Failed to insert user into DB: %v", err)
@@ -114,7 +123,7 @@ func (s *UserService) CreateUser(user *models.User) (*models.User, string, error
 		return nil, "", err
 	}
 
-	go sendVerificationEmail(user.Email, verifyToken)
+	go sendVerificationEmail(user.Email, user.VerificationToken)
 
 	user.Password = ""
 
@@ -126,8 +135,6 @@ func (s *UserService) VerifyEmail(token string) (*models.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	fmt.Println("VerifyEmail method initiliazed with token:", token)
-
 	var user models.User
 	err := collection.FindOne(ctx, bson.M{"verificationtoken": token}).Decode(&user)
 	if err != nil {
@@ -135,18 +142,14 @@ func (s *UserService) VerifyEmail(token string) (*models.User, error) {
 		return nil, err
 	}
 
-	fmt.Println("User found for verification:", user.Email)
-
 	update := bson.M{"$set": bson.M{"isverified": true, "verificationtoken": ""}}
 	_, err = collection.UpdateOne(ctx, bson.M{"_id": user.ID}, update)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("User verified:", user.Email)
 	user.IsVerified = true
 	user.VerificationToken = ""
 
-	fmt.Println("User güncellendi:", user.Email)
 	return &user, nil
 }
 
@@ -180,6 +183,9 @@ func (s *UserService) Login(req *request.UserLoginRequest) (*response.UserLoginR
 		FullName: user.FullName,
 		Email:    user.Email,
 		Token:    tokenString,
+	}
+	if user.IsVerified == false {
+		go sendVerificationEmail(user.Email, user.VerificationToken)
 	}
 
 	log.Infof("User logged in successfully: %s", req.Email)

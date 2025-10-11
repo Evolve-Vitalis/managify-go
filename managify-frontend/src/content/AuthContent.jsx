@@ -1,33 +1,29 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useCallback } from "react";
 import { jwtDecode } from "jwt-decode";
-
-
-
+import { useNavigate } from "react-router-dom";
 
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-
-
-  const login = (newToken) => {
+  const login = useCallback((newToken) => {
     localStorage.setItem("token", newToken);
     setToken(newToken);
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem("token");
     setToken(null);
-  };
-
-
+    navigate('/login', { replace: true });
+  }, [navigate]);
 
   function isTokenValid(token) {
     if (!token) return false;
     try {
-      const decoded = jwt_decode(token);
+      const decoded = jwtDecode(token);
       return decoded.exp > Date.now() / 1000;
     } catch (err) {
       return false;
@@ -42,7 +38,7 @@ export function AuthProvider({ children }) {
       localStorage.removeItem("token");
       setToken(null);
     }
-    setLoading(false); 
+    setLoading(false);
   }, []);
 
   return (
