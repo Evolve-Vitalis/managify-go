@@ -57,7 +57,6 @@ func generateToken(n int) (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-// E-posta gönderici (örnek, SMTP ayarlarını kendine göre düzenle)
 func sendVerificationEmail(email, token string) error {
 
 	from := os.Getenv("SMTP_FROM")
@@ -81,8 +80,6 @@ func sendVerificationEmail(email, token string) error {
 		"</body>" +
 		"</html>"
 
-	fmt.Println(msg)
-
 	addr := smtpHost + ":" + smtpPort
 	return smtp.SendMail(addr,
 		smtp.PlainAuth("", from, pass, smtpHost),
@@ -90,7 +87,6 @@ func sendVerificationEmail(email, token string) error {
 }
 
 func (s *UserService) CreateUser(user *models.User) (*models.User, string, error) {
-	log.Infof("Attempting to create user: %s", user.Email)
 
 	collection := database.DB.Collection(s.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -143,7 +139,8 @@ func (s *UserService) VerifyEmail(token string) (*models.User, error) {
 	}
 
 	update := bson.M{"$set": bson.M{"isverified": true, "verificationtoken": ""}}
-	_, err = collection.UpdateOne(ctx, bson.M{"_id": user.ID}, update)
+	filter := bson.M{"_id": user.ID}
+	_, err = collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return nil, err
 	}
@@ -154,14 +151,14 @@ func (s *UserService) VerifyEmail(token string) (*models.User, error) {
 }
 
 func (s *UserService) Login(req *request.UserLoginRequest) (*response.UserLoginResponse, error) {
-	log.Infof("Attempting login for email: %s", req.Email)
 
 	collection := database.DB.Collection(s.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	var user models.User
-	err := collection.FindOne(ctx, bson.M{"email": req.Email}).Decode(&user)
+	filter := bson.M{"email": req.Email}
+	err := collection.FindOne(ctx, filter).Decode(&user)
 	if err != nil {
 		log.Warnf("User not found: %s", req.Email)
 		return nil, fmt.Errorf("invalid email or password")
@@ -169,13 +166,11 @@ func (s *UserService) Login(req *request.UserLoginRequest) (*response.UserLoginR
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 	if err != nil {
-		log.Warnf("Invalid password for email: %s", req.Email)
 		return nil, fmt.Errorf("invalid email or password")
 	}
 
 	tokenString, err := s.CreateToken(&user)
 	if err != nil {
-		log.Errorf("Failed to create JWT token for user: %s, error: %v", req.Email, err)
 		return nil, fmt.Errorf("could not generate token")
 	}
 
@@ -194,15 +189,13 @@ func (s *UserService) Login(req *request.UserLoginRequest) (*response.UserLoginR
 
 func (s *UserService) IsUserValid(userId primitive.ObjectID) (bool, error) {
 
-	fmt.Printf("user Id in IsUserValid %v", userId)
 	collection := database.DB.Collection(s.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	var user models.User
 
-	err := collection.FindOne(ctx, bson.M{
-		"_id": userId,
-	}).Decode(&user)
+	filter := bson.M{"_id": userId}
+	err := collection.FindOne(ctx, filter).Decode(&user)
 
 	if err != nil {
 		log.WithError(err).Error("failed to fetch user")
@@ -230,7 +223,8 @@ func (s *UserService) GetUserByGivenId(givenId string) (*models.User, error) {
 	}
 
 	var user models.User
-	err = collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&user)
+	filter := bson.M{"_id": objID}
+	err = collection.FindOne(ctx, filter).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil

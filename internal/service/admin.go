@@ -64,16 +64,16 @@ func (s *UserService) GetUserById(id string) (*models.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	opts := options.FindOne().SetProjection(bson.M{"password": 0})
+	optsFilter := bson.M{"password": 0}
+	opts := options.FindOne().SetProjection(optsFilter)
 
 	var user models.User
-	err = collection.FindOne(ctx, bson.M{"_id": objID}, opts).Decode(&user)
+	filter := bson.M{"_id": objID}
+	err = collection.FindOne(ctx, filter, opts).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			log.Warnf("User not found with id=%s", id)
 			return nil, fmt.Errorf("user not found")
 		}
-		log.WithError(err).Error("Error finding user by id")
 		return nil, err
 	}
 
@@ -81,11 +81,9 @@ func (s *UserService) GetUserById(id string) (*models.User, error) {
 }
 
 func (s *UserService) DeleteUserById(id string) (*mongo.DeleteResult, error) {
-	log.Debugf("DeleteUserById called with id=%s", id)
 
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		log.WithError(err).Warnf("Invalid ObjectID format: %s", id)
 		return nil, fmt.Errorf("invalid ObjectID format: %v", err)
 	}
 
@@ -93,18 +91,16 @@ func (s *UserService) DeleteUserById(id string) (*mongo.DeleteResult, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	res, err := collection.DeleteOne(ctx, bson.M{"_id": objID})
+	filter := bson.M{"_id": objID}
+	res, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
-		log.WithError(err).Error("Failed to delete user")
 		return nil, fmt.Errorf("failed to delete user: %v", err)
 	}
 
 	if res.DeletedCount == 0 {
-		log.Warnf("User not found with id: %s", id)
 		return res, fmt.Errorf("user not found")
 	}
 
-	log.Infof("User deleted successfully: %s", id)
 	return res, nil
 }
 
@@ -133,7 +129,6 @@ func (s *ProjectService) GetAllProjects() ([]models.Project, error) {
 		return nil, err
 	}
 
-	log.Infof("GetAllProjects succeeded, retrieved %d projects", len(projects))
 	return projects, nil
 }
 
