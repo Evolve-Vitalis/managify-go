@@ -133,7 +133,6 @@ func (s *ProjectService) GetAllProjects() ([]models.Project, error) {
 }
 
 func (s *RoleService) GetAllRoles() ([]models.Role, error) {
-	log.Debug("GetAllRoles called")
 
 	collection := database.DB.Collection(s.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -156,6 +155,5 @@ func (s *RoleService) GetAllRoles() ([]models.Role, error) {
 		return nil, err
 	}
 
-	log.Infof("GetAllRoles succeeded, retrieved %d roles", len(roles))
 	return roles, nil
 }
