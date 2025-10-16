@@ -43,14 +43,31 @@ func CreateRegisterHandler(c *fiber.Ctx) error {
 		IsValid:               isValid,
 		UserID:                user.ID,
 	}
-	subscription, err := service.GetSubscriptionService().CreateSubscription(&subscriptionMethod)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": constant.ErrInternalServer,
-			"error":   err.Error(),
-		})
+
+	var (
+		wg              sync.WaitGroup
+		subscription    *models.Subscription
+		subscriptionErr error
+	)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		var err error
+		subscription, err = service.GetSubscriptionService().CreateSubscription(&subscriptionMethod)
+		if err != nil {
+			subscriptionErr = err
+			return
+		}
+	}()
+
+	wg.Wait()
+
+	if subscriptionErr != nil {
+		return subscriptionErr
 	}
 
+	// Return response
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message":      constant.SuccessCreated,
 		"token":        token,
