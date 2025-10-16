@@ -237,23 +237,18 @@ func (s *ProjectService) GetProjectsByUserId(userIDHex string) ([]*models.Projec
 		},
 	}
 
-	cursor, err := collection.Find(ctx, filter)
+	opts := options.Find().
+		SetLimit(50)
+
+	cursor, err := collection.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
 
 	var projects []*models.Project
-	for cursor.Next(ctx) {
-		var project models.Project
-		if err := cursor.Decode(&project); err != nil {
-			return nil, err
-		}
-		projects = append(projects, &project)
-	}
-
-	if err := cursor.Err(); err != nil {
-		return nil, err
+	if err = cursor.All(ctx, &projects); err != nil {
+		return nil, fmt.Errorf("decode projects failed: %w", err)
 	}
 
 	if projects == nil {

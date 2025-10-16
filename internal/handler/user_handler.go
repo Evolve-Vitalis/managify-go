@@ -5,6 +5,7 @@ import (
 	"managify/dto/request"
 	"managify/internal/service"
 	"managify/models"
+	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -84,8 +85,37 @@ func LoginHandler(c *fiber.Ctx) error {
 func GetUserByIdHandler(c *fiber.Ctx) error {
 	userIDHex := c.Params("id")
 
-	user, err := service.GetUserService().GetUserById(userIDHex)
-	if err != nil {
+	var (
+		wg sync.WaitGroup
+
+		user       *models.User
+		project    any
+		sub        any
+		userErr    error
+		projectErr error
+		subErr     error
+	)
+
+	wg.Add(3)
+
+	go func() {
+		defer wg.Done()
+		user, userErr = service.GetUserService().GetUserById(userIDHex)
+	}()
+
+	go func() {
+		defer wg.Done()
+		project, projectErr = service.GetProjectService().GetProjectsByUserId(userIDHex)
+	}()
+
+	go func() {
+		defer wg.Done()
+		sub, subErr = service.GetSubscriptionService().GetByUserId(userIDHex)
+	}()
+
+	wg.Wait()
+
+	if userErr != nil || projectErr != nil || subErr != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": constant.ErrInternalServer,
 		})
@@ -93,20 +123,6 @@ func GetUserByIdHandler(c *fiber.Ctx) error {
 	if user == nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"message": constant.ErrNotFound,
-		})
-	}
-
-	project, err := service.GetProjectService().GetProjectsByUserId(userIDHex)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": constant.ErrInternalServer,
-		})
-	}
-
-	sub, err := service.GetSubscriptionService().GetByUserId(userIDHex)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": constant.ErrInternalServer,
 		})
 	}
 
@@ -123,6 +139,7 @@ func GetUserByIdHandler(c *fiber.Ctx) error {
 		"data":    data,
 	})
 }
+
 func VerifyEmailHandler(c *fiber.Ctx) error {
 	token := c.Query("token")
 
