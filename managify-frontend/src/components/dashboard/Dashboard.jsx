@@ -66,9 +66,6 @@ export default function ManagifyDashboard() {
     const { isDarkMode, toggleTheme } = useTheme(); // Use context instead of local state
     const { logout } = useContext(AuthContext);
 
-    console.log("isDarkMode in Dashboard:", isDarkMode);
-    console.log("toggleTheme in Dashboard:", toggleTheme);
-
     const [userData, setUserData] = useState(null);
     const [userProjects, setUserProjects] = useState([]);
     const [recentIssues, setRecentIssues] = useState([]);
