@@ -305,7 +305,8 @@ func (s *ProjectService) DeleteMemberFromProjectById(userId, memberId primitive.
 	defer cancel()
 
 	var project models.Project
-	err := collection.FindOne(ctx, bson.M{"owner_id": userId}).Decode(&project)
+	filter := bson.M{"owner_id": userId}
+	err := collection.FindOne(ctx, filter).Decode(&project)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch project")
 		return err
@@ -325,7 +326,5 @@ func (s *ProjectService) DeleteMemberFromProjectById(userId, memberId primitive.
 	if res.ModifiedCount == 0 {
 		return err
 	}
-
 	return nil
-
 }

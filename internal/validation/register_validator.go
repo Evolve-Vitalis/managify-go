@@ -27,37 +27,30 @@ func CreateRegisterValidator(c *fiber.Ctx) error {
 
 	// Body parse
 	if err := c.BodyParser(&user); err != nil {
-		log.WithError(err).Error("Failed to parse request body")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Invalid request body",
 			"error":   err.Error(),
 		})
 	}
-	log.Debugf("Parsed request body: %+v", user)
 
 	// Password validation
 	if user.Password == "" {
-		log.Error("Password is required")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Password is required",
 		})
 	}
 
 	if len(user.Password) < 6 || len(user.Password) > 20 {
-		log.Error("Password length invalid")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Password must be between 6 and 20 characters",
 		})
 	}
 
 	if CheckPasswordComplexity(user.Password) {
-		log.Error("Password complexity invalid")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Password must contain at least 1 number, 1 uppercase letter, and 1 special character",
 		})
 	}
-
-	log.Info("Password validation passed")
 
 	// Email format
 	emailRegex := regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$`)
@@ -67,7 +60,6 @@ func CreateRegisterValidator(c *fiber.Ctx) error {
 			"message": "Invalid email format",
 		})
 	}
-	log.Info("Email format validation passed")
 
 	// DB uniqueness checks
 	collection := database.DB.Collection(us.Collection)
@@ -104,9 +96,7 @@ func CreateRegisterValidator(c *fiber.Ctx) error {
 			"message": "Name already exists",
 		})
 	}
-	log.Info("Full name uniqueness check passed")
 
-	log.Info("All validations passed, proceeding to handler")
 	return c.Next()
 }
 
