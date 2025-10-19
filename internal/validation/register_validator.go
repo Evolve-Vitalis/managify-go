@@ -55,7 +55,6 @@ func CreateRegisterValidator(c *fiber.Ctx) error {
 	// Email format
 	emailRegex := regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$`)
 	if !emailRegex.MatchString(user.Email) {
-		log.Error("Email format invalid")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Invalid email format",
 		})
