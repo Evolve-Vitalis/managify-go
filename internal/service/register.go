@@ -179,7 +179,7 @@ func (s *UserService) Login(req *request.UserLoginRequest) (*response.UserLoginR
 		Email:    user.Email,
 		Token:    tokenString,
 	}
-	if user.IsVerified == false {
+	if !user.IsVerified {
 		go sendVerificationEmail(user.Email, user.VerificationToken)
 	}
 
