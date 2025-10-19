@@ -11,14 +11,15 @@ import (
 
 	"github.com/gofiber/fiber/v2/middleware/pprof"
 
+	_ "managify/internal/handler"
+	_ "managify/swagger"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/joho/godotenv"
-	"github.com/sirupsen/logrus"
 
-	_ "managify/internal/handler"
-	_ "managify/swagger"
+	"github.com/sirupsen/logrus"
 )
 
 // @Title Managify API
@@ -51,9 +52,12 @@ func main() {
 
 	apiLimiter(app)
 
+	app.Use(middleware.MetricMiddleware)
+
 	// pprof for performance monitoring
 	app.Use(pprof.New())
 	router.Routers(app)
+
 	app.Listen(os.Getenv("PORT"))
 
 }

@@ -61,4 +61,7 @@ const (
 
 	// Swagger endpoint
 	SwaggerBase = version + "/swagger"
+
+	// Metrics endpoint
+	MetricsBase = version + "/metrics"
 )

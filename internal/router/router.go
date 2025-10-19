@@ -22,6 +22,8 @@ func Routers(app *fiber.App) {
 	RouterStatus(app)
 	RouterLogger(app)
 	RouterSwagger(app)
+	RouterMetrics(app)
+
 }
 
 func RouterUser(app *fiber.App) {
@@ -93,7 +95,15 @@ func RouterLogger(app *fiber.App) {
 func RouterSwagger(app *fiber.App) {
 	api := app.Group(routes.SwaggerBase)
 
-	if os.Getenv("SWAGGER") != "true" {
+	if os.Getenv("SWAGGER") == "true" {
 		api.Get("/*", swagger.HandlerDefault)
+	}
+}
+
+func RouterMetrics(app *fiber.App) {
+	api := app.Group(routes.MetricsBase)
+
+	if os.Getenv("METRICS") == "true" {
+		api.Get("/", handler.MetricsHandler)
 	}
 }
