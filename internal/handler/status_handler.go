@@ -10,6 +10,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// @Summary Create a new status
+// @Description Creates a new status in the system.
+// @Tags Statuses
+// @Accept json
+// @Produce json
+// @Param status body models.Status true "Status to create"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /statuses [post]
 func CreateStatusHandler(c *fiber.Ctx) error {
 	var status models.Status
 
@@ -43,6 +55,17 @@ func CreateStatusHandler(c *fiber.Ctx) error {
 	})
 }
 
+// @Summary Delete a status
+// @Description Deletes a status by its ID for a specific project.
+// @Tags Statuses
+// @Produce json
+// @Param id path string true "Status ID"
+// @Param project path string true "Project ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /statuses/{id}/project/{project} [delete]
 func DeleteStatusHandler(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	projectParam := c.Params("project")

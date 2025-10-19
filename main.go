@@ -16,8 +16,18 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
+
+	_ "managify/internal/handler"
+	_ "managify/swagger"
 )
 
+// @Title Managify API
+// @Version 1.0
+// @Description This is the API documentation for the Managify project management application. It provides endpoints for managing projects, issues, users, roles, statuses, and project invites.
+// @Host localhost:3000
+// @Contact.name Doguhan İlter
+// @Contact.email doguhannilt@gmail.com
+// @BasePath /
 func main() {
 	middleware.InitLogger()
 	err := godotenv.Load()

@@ -11,6 +11,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// @Summary Register a new user
+// @Description Registers a new user in the system.
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param user body models.User true "User"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/register [post]
 func CreateRegisterHandler(c *fiber.Ctx) error {
 	var user models.User
 
@@ -75,6 +85,17 @@ func CreateRegisterHandler(c *fiber.Ctx) error {
 		"subscription": subscription.PlanType,
 	})
 }
+
+// @Summary User login
+// @Description Authenticates a user and returns a JWT token.
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param credentials body request.UserLoginRequest true "User login credentials"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /users/login [post]
 func LoginHandler(c *fiber.Ctx) error {
 	var req request.UserLoginRequest
 
@@ -99,6 +120,18 @@ func LoginHandler(c *fiber.Ctx) error {
 		"token":   res.Token,
 	})
 }
+
+// @Summary Get user by ID
+// @Description Retrieves a user by their ID, along with associated projects and subscription details.
+// @Tags Users
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /users/{id} [get]
 func GetUserByIdHandler(c *fiber.Ctx) error {
 	userIDHex := c.Params("id")
 
@@ -157,6 +190,14 @@ func GetUserByIdHandler(c *fiber.Ctx) error {
 	})
 }
 
+// @Summary Verify user email
+// @Description Verifies a user's email using a token.
+// @Tags Users
+// @Produce json
+// @Param token query string true "Verification token"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Router /users/verify-email [get]
 func VerifyEmailHandler(c *fiber.Ctx) error {
 	token := c.Query("token")
 

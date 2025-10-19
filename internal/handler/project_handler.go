@@ -14,6 +14,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// @Summary Create a new project
+// @Description Creates a new project in the system.
+// @Tags Projects
+// @Accept json
+// @Produce json
+// @Param project body models.Project true "Project to create"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /projects [post]
 func CreateProjectHandler(c *fiber.Ctx) error {
 	var project models.Project
 
@@ -43,6 +55,17 @@ func CreateProjectHandler(c *fiber.Ctx) error {
 	})
 }
 
+// @Summary Delete a project
+// @Description Deletes a project by its ID.
+// @Tags Projects
+// @Produce json
+// @Param id path string true "Project ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /projects/{id} [delete]
 func DeleteProjectHandler(c *fiber.Ctx) error {
 
 	user, ok := utils.GetUserLocal(c)
@@ -81,6 +104,17 @@ type StatusWithIssues struct {
 	IssuesID  []primitive.ObjectID `bson:"issues" json:"issues_id"`
 }
 
+// @Summary Get a project by ID
+// @Description Retrieves a project by its ID, including its statuses and team members.
+// @Tags Projects
+// @Produce json
+// @Param id path string true "Project ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /projects/{id} [get]
 func GetProjectHandler(c *fiber.Ctx) error {
 	start := time.Now()
 	projectIDHex := c.Params("id")
@@ -162,6 +196,16 @@ func GetProjectHandler(c *fiber.Ctx) error {
 	})
 }
 
+// @Summary Delete a member from a project by member ID
+// @Description Deletes a member from a project using the member's ID.
+// @Tags Projects
+// @Produce json
+// @Param memberId path string true "Member ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /projects/member/{memberId} [delete]
 func DeleteMemberFromProjectByIdHandler(c *fiber.Ctx) error {
 
 	memberId := c.Params("memberId")

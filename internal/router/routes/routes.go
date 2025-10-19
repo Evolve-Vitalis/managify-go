@@ -58,4 +58,7 @@ const (
 	// Log endpoint
 	LoggerBase = version + "/logger"
 	LoggerGet  = "/:userId"
+
+	// Swagger endpoint
+	SwaggerBase = version + "/swagger"
 )

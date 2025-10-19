@@ -4,10 +4,12 @@ import (
 	"managify/internal/handler"
 	"managify/internal/middleware"
 	"managify/internal/router/routes"
+	"os"
 
 	"managify/internal/validation"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/swagger"
 )
 
 func Routers(app *fiber.App) {
@@ -19,6 +21,7 @@ func Routers(app *fiber.App) {
 	RouterIssue(app)
 	RouterStatus(app)
 	RouterLogger(app)
+	RouterSwagger(app)
 }
 
 func RouterUser(app *fiber.App) {
@@ -85,4 +88,12 @@ func RouterLogger(app *fiber.App) {
 	api := app.Group(routes.LoggerBase, middleware.AuthMiddleware)
 
 	api.Get(routes.LoggerGet, handler.GetLogsHandlerByUserId)
+}
+
+func RouterSwagger(app *fiber.App) {
+	api := app.Group(routes.SwaggerBase)
+
+	if os.Getenv("SWAGGER") != "true" {
+		api.Get("/*", swagger.HandlerDefault)
+	}
 }

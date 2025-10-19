@@ -10,6 +10,15 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// @Summary Get issues by status ID
+// @Description Retrieves all issues associated with a specific status ID.
+// @Tags Issues
+// @Produce json
+// @Param statusID path string true "Status ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /issues/status/{statusID} [get]
 func GetIssuesByStatusHandler(c *fiber.Ctx) error {
 	statusIDHex := c.Params("statusID")
 	statusID, err := primitive.ObjectIDFromHex(statusIDHex)
@@ -40,6 +49,18 @@ func GetIssuesByStatusHandler(c *fiber.Ctx) error {
 		"data":    data,
 	})
 }
+
+// @Summary Create a new issue
+// @Description Creates a new issue in the system.
+// @Tags Issues
+// @Accept json
+// @Produce json
+// @Param issue body models.Issue true "Issue to create"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /issues [post]
 func CreateIssueHandler(c *fiber.Ctx) error {
 
 	var issue models.Issue
@@ -70,6 +91,17 @@ func CreateIssueHandler(c *fiber.Ctx) error {
 		"data":    res,
 	})
 }
+
+// @Summary Delete an issue
+// @Description Deletes an issue by its ID.
+// @Tags Issues
+// @Produce json
+// @Param id path string true "Issue ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /issues/{id} [delete]
 func DeleteIssueHandler(c *fiber.Ctx) error {
 	user, ok := utils.GetUserLocal(c)
 	if !ok {
@@ -97,6 +129,18 @@ func DeleteIssueHandler(c *fiber.Ctx) error {
 		"message": constant.SuccessDeleted,
 	})
 }
+
+// @Summary Update issue status
+// @Description Updates the status of an issue.
+// @Tags Issues
+// @Produce json
+// @Param issueID path string true "Issue ID"
+// @Param statusID path string true "New Status ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /issues/{issueID}/status/{statusID} [patch]
 func UpdateIssueStatusHandler(c *fiber.Ctx) error {
 
 	user, ok := utils.GetUserLocal(c)
@@ -144,6 +188,15 @@ func UpdateIssueStatusHandler(c *fiber.Ctx) error {
 	})
 }
 
+// @Summary Get oncoming issues for a project
+// @Description Retrieves issues that are due soon for a specific project.
+// @Tags Issues
+// @Produce json
+// @Param projectID path string true "Project ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /issues/project/{projectID}/oncoming [get]
 func GetOncomingIssuesHandler(c *fiber.Ctx) error {
 	projectIDHex := c.Params("projectID")
 	projectID, err := primitive.ObjectIDFromHex(projectIDHex)

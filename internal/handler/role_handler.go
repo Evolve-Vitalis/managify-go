@@ -12,6 +12,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// @Summary Create a new role
+// @Description Creates a new role in a project. Only project owners can add roles.
+// @Tags Projects
+// @Accept json
+// @Produce json
+// @Param role body models.Role true "Role to create"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /roles [post]
 func CreateRoleHandler(c *fiber.Ctx) error {
 	var role models.Role
 
@@ -60,6 +72,16 @@ func CreateRoleHandler(c *fiber.Ctx) error {
 	})
 }
 
+// @Summary Delete a role
+// @Description Deletes a role by its ID.
+// @Tags Projects
+// @Produce json
+// @Param id path string true "Role ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /roles/{id} [delete]
 func DeleteRoleHandler(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	if idParam == "" {

@@ -12,6 +12,16 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// @Summary Create a new project invite
+// @Description Creates a new invite for a project.
+// @Tags ProjectInvites
+// @Accept json
+// @Produce json
+// @Param invite body request.ProjectInviteRequest true "Project Invite Request"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /project-invites [post]
 func CreateProjectInviteHandler(c *fiber.Ctx) error {
 	var req request.ProjectInviteRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -40,6 +50,16 @@ func CreateProjectInviteHandler(c *fiber.Ctx) error {
 	})
 }
 
+// @Summary Respond to a project invite
+// @Description Accepts or declines a project invite.
+// @Tags ProjectInvites
+// @Produce json
+// @Param inviteId path string true "Invite ID"
+// @Param action query string true "Action (accept/decline)"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /project-invites/{inviteId}/respond [patch]
 func RespondProjectInviteHandler(c *fiber.Ctx) error {
 	inviteIDHex := c.Params("inviteId")
 	inviteID, err := primitive.ObjectIDFromHex(inviteIDHex)
@@ -74,6 +94,15 @@ func RespondProjectInviteHandler(c *fiber.Ctx) error {
 	})
 }
 
+// @Summary Get project invites by ID
+// @Description Retrieves project invites by user or project ID.
+// @Tags ProjectInvites
+// @Produce json
+// @Param id path string true "User or Project ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /project-invites/{id} [get]
 func GetInviteHandlerById(c *fiber.Ctx) error {
 	rcvStr := c.Params("id")
 	objID, err := primitive.ObjectIDFromHex(rcvStr)
