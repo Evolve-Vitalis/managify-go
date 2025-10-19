@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gofiber/fiber/v2/middleware/pprof"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
@@ -39,6 +41,8 @@ func main() {
 
 	apiLimiter(app)
 
+	// pprof for performance monitoring
+	app.Use(pprof.New())
 	router.Routers(app)
 	app.Listen(os.Getenv("PORT"))
 
