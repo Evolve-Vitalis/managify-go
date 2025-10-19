@@ -79,7 +79,7 @@ func (s *LogService) GetLogsByProjectID(projectID string) ([]models.ProjectLog, 
 func (s *LogService) GetLogsByUserId(userID string) ([]models.ProjectLog, error) {
 
 	dbCollection := database.DB.Collection(s.Collection)
-	opts := options.Find().SetSort(bson.D{{"timestamp", -1}}).SetLimit(5)
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}}).SetLimit(5)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
