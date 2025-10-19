@@ -135,6 +135,8 @@ managify-go/
 │   │   ├── router/
 │   │   └── service/
 │   │   └── validation/
+│   │   └── metrics/
+│   ├── swagger/
 │   ├── database/
 │   ├── constant/
 │   ├── models/
