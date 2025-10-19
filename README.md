@@ -15,6 +15,7 @@ A modern project management tool rebuilt with Go, featuring a clean architecture
 - **💻 Desktop App** - Native desktop experience built with Electron
 
 
+
 ## 🛠️ Tech Stack
 
 ### Backend
@@ -23,6 +24,7 @@ A modern project management tool rebuilt with Go, featuring a clean architecture
 - **MongoDB** - NoSQL database for flexible data storage
 - **JWT Auth** - Secure token-based authentication
 - **Docker** - Containerization for easy deployment
+- **Swagger** - All endpoints are fully documented
 
 ### Frontend
 - **React 19** - Modern UI library
