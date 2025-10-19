@@ -48,11 +48,12 @@ const (
 
 	// Project issue endpoints
 
-	IssueBase   = version + "/issue"
-	IssueCreate = "/create-issue"
-	IssueDelete = "/delete-issue/:id"
-	IssuesGet   = "/get/:statusID"
-	IssueUpdate = "/update-status/:issueID/:statusID"
+	IssueBase     = version + "/issue"
+	IssueCreate   = "/create-issue"
+	IssueDelete   = "/delete-issue/:id"
+	IssuesGet     = "/get/:statusID"
+	IssueUpdate   = "/update-status/:issueID/:statusID"
+	IssueGetOnDue = "/due-today/:projectID"
 
 	// Log endpoint
 	LoggerBase = version + "/logger"

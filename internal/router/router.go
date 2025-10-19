@@ -78,6 +78,7 @@ func RouterIssue(app *fiber.App) {
 	api.Delete(routes.IssueDelete, handler.DeleteIssueHandler)
 	api.Get(routes.IssuesGet, handler.GetIssuesByStatusHandler)
 	api.Put(routes.IssueUpdate, handler.UpdateIssueStatusHandler)
+	api.Get(routes.IssueGetOnDue, handler.GetOncomingIssuesHandler)
 }
 
 func RouterLogger(app *fiber.App) {

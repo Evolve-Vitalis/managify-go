@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type IssueService struct {
@@ -172,4 +173,46 @@ func (s *IssueService) UpdateIssueStatus(issueID, newStatusID, userID primitive.
 	issue.StatusID = newStatusID
 
 	return &issue, nil
+}
+
+func (s *IssueService) GetOncomingIssues(projectID primitive.ObjectID) ([]*models.Issue, error) {
+	collection := database.DB.Collection(s.Collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	currentTime := time.Now()
+	threeDaysLater := currentTime.Add(72 * time.Hour)
+	format := "2006-01-02"
+
+	filter := bson.M{
+		"project_id": projectID,
+		"due_date": bson.M{
+			"$gte": currentTime.Format(format),
+			"$lte": threeDaysLater.Format(format),
+		},
+	}
+
+	projection := bson.M{
+		"title":       1,
+		"description": 1,
+		"due_date":    1,
+	}
+	opt := options.Find().SetSort(bson.D{{Key: "due_date", Value: 1}}).SetProjection(projection)
+
+	cursor, err := collection.Find(ctx, filter, opt)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var issues []*models.Issue
+	for cursor.Next(ctx) {
+		var issue models.Issue
+		if err := cursor.Decode(&issue); err != nil {
+			return nil, err
+		}
+		issues = append(issues, &issue)
+	}
+
+	return issues, nil
 }

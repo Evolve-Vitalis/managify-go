@@ -143,3 +143,30 @@ func UpdateIssueStatusHandler(c *fiber.Ctx) error {
 		},
 	})
 }
+
+func GetOncomingIssuesHandler(c *fiber.Ctx) error {
+	projectIDHex := c.Params("projectID")
+	projectID, err := primitive.ObjectIDFromHex(projectIDHex)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": constant.ErrBadRequest})
+	}
+
+	issues, err := service.GetIssueService().GetOncomingIssues(projectID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": constant.ErrInternalServer})
+	}
+
+	issueResponse := make([]fiber.Map, 0, len(issues))
+	for _, issues := range issues {
+		issueResponse = append(issueResponse, fiber.Map{
+			"id":          issues.ID,
+			"title":       issues.Title,
+			"description": issues.Description,
+			"due_date":    issues.DueDate,
+		})
+	}
+	return c.JSON(fiber.Map{
+		"message": constant.SuccessFetched,
+		"data":    issueResponse,
+	})
+}
