@@ -79,11 +79,7 @@ export default function ProjectDetail() {
 
     const [onDue, setOnDue] = useState([]);
 
-    console.log("Issues By Status:", issuesByStatus);
-
-    console.log("On Due Issues:", onDue);
-
-    const { isDarkMode, toggleTheme } = useTheme(); // Use context instead of local state
+    const { isDarkMode, toggleTheme } = useTheme();
 
     // Fetch oncoming issues
     useEffect(() => {
@@ -104,14 +100,10 @@ export default function ProjectDetail() {
     useEffect(() => {
         const fetchProject = async () => {
             try {
-
-                console.log("Detail Project Token" + token)
                 const response = await api.get(`/project/projects/${id}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const projectData = response.data.data;
-
-                console.log(projectData);
 
                 setProject(projectData);
                 setMember(projectData.members);
@@ -138,7 +130,6 @@ export default function ProjectDetail() {
             if (!fetchedStatuses[statusIdStr]) {
                 api.get(`/issue/get/${status.id}`, { headers: { Authorization: `Bearer ${token}` } })
                     .then(res => {
-                        console.log(`Issues for status ${status.id}:`, res.data.data);
                         setIssuesByStatus(prev => ({
                             ...prev,
                             [statusIdStr]: res.data.data.map(i => ({ ...i, id: String(i.id) }))

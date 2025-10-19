@@ -27,7 +27,7 @@ export function ThemeProvider({ children }) {
 }
 
 export function useTheme() {
-    console.log("useTheme called");
+   
     
   return useContext(ThemeContext);
 }
