@@ -6,6 +6,7 @@ import (
 	"managify/database"
 	"managify/dto/request"
 	"managify/models"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -25,7 +26,6 @@ func init() {
 }
 
 func CreateProjectInvite(senderID primitive.ObjectID, req request.ProjectInviteRequest) (*models.ProjectInvite, error) {
-
 	usersColl := database.DB.Collection("users")
 	projectsColl := database.DB.Collection("projects")
 	invitesColl := database.DB.Collection("project_invites")
@@ -33,23 +33,50 @@ func CreateProjectInvite(senderID primitive.ObjectID, req request.ProjectInviteR
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	var receiver models.User
-	if err := usersColl.FindOne(ctx, bson.M{"email": req.Email}).Decode(&receiver); err != nil {
-		log.WithError(err).Warnf("Receiver not found for email=%s", req.Email)
-		return nil, fmt.Errorf("receiver not found")
+	var (
+		wg       sync.WaitGroup
+		receiver models.User
+		project  models.Project
+	)
+
+	errChan := make(chan error, 2)
+
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		usersCollFilter := bson.M{"email": req.Email}
+		if err := usersColl.FindOne(ctx, usersCollFilter).Decode(&receiver); err != nil {
+			errChan <- fmt.Errorf("receiver not found")
+			return
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		projectID, err := primitive.ObjectIDFromHex(req.ProjectID)
+		if err != nil {
+			errChan <- fmt.Errorf("invalid project ID")
+			return
+		}
+
+		projectsCollFilter := bson.M{"_id": projectID}
+		if err := projectsColl.FindOne(ctx, projectsCollFilter).Decode(&project); err != nil {
+			errChan <- fmt.Errorf("project not found")
+			return
+		}
+	}()
+
+	wg.Wait()
+	close(errChan)
+
+	for err := range errChan {
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	projectID, err := primitive.ObjectIDFromHex(req.ProjectID)
-	if err != nil {
-		log.WithError(err).Warnf("Invalid project ID: %s", req.ProjectID)
-		return nil, fmt.Errorf("invalid project ID")
-	}
-
-	var project models.Project
-	if err := projectsColl.FindOne(ctx, bson.M{"_id": projectID}).Decode(&project); err != nil {
-		log.WithError(err).Warnf("Project not found with ID: %s", projectID.Hex())
-		return nil, fmt.Errorf("project not found")
-	}
+	projectID, _ := primitive.ObjectIDFromHex(req.ProjectID)
 
 	for _, member := range project.TeamIDs {
 		if member == receiver.ID {
@@ -57,17 +84,14 @@ func CreateProjectInvite(senderID primitive.ObjectID, req request.ProjectInviteR
 		}
 	}
 
+	statusFilter := bson.M{"$in": []string{"pending", "accepted"}}
 	filter := bson.M{
 		"receiver_id": receiver.ID,
 		"project_id":  projectID,
-		"status":      bson.M{"$in": []string{"pending", "accepted"}},
+		"status":      statusFilter,
 	}
 
-	count, err := invitesColl.CountDocuments(ctx, bson.M{
-		"receiver_id": receiver.ID,
-		"project_id":  projectID,
-		"status":      bson.M{"$in": []string{"pending", "accepted"}},
-	})
+	count, err := invitesColl.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +108,6 @@ func CreateProjectInvite(senderID primitive.ObjectID, req request.ProjectInviteR
 			"created_at":  time.Now(),
 		},
 	}
-
 	opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)
 	res := invitesColl.FindOneAndUpdate(ctx, filter, update, opts)
 
@@ -92,7 +115,6 @@ func CreateProjectInvite(senderID primitive.ObjectID, req request.ProjectInviteR
 	if err := res.Decode(&invite); err != nil {
 		return nil, fmt.Errorf("invite already exists or could not be created")
 	}
-	log.Infof("Invite created successfully: %+v", invite)
 
 	projectLogId := primitive.NewObjectID()
 	projectLog := models.ProjectLog{
@@ -102,6 +124,7 @@ func CreateProjectInvite(senderID primitive.ObjectID, req request.ProjectInviteR
 		Message:   "Invite has been sent to " + req.Email,
 		Timestamp: time.Now(),
 	}
+
 	if err := GetLogService().CreateLog(&projectLog); err != nil {
 		return nil, err
 	}
