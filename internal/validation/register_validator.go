@@ -67,7 +67,6 @@ func CreateRegisterValidator(c *fiber.Ctx) error {
 
 	emailCount, err := collection.CountDocuments(ctx, bson.M{"email": user.Email})
 	if err != nil {
-		log.WithError(err).Error("Failed to count email in DB")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Internal Server Error",
 			"error":   err,
@@ -79,18 +78,15 @@ func CreateRegisterValidator(c *fiber.Ctx) error {
 			"message": "Email already exists",
 		})
 	}
-	log.Info("Email uniqueness check passed")
 
 	fullNameCount, err := collection.CountDocuments(ctx, bson.M{"full_name": user.FullName})
 	if err != nil {
-		log.WithError(err).Error("Failed to count full name in DB")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Internal Server Error",
 			"error":   err,
 		})
 	}
 	if fullNameCount > 0 {
-		log.Warnf("Full name already exists: %s", user.FullName)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Name already exists",
 		})

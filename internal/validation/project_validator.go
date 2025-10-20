@@ -34,7 +34,6 @@ func CreateProjectValidator(c *fiber.Ctx) error {
 
 	log.Debugf("Parsed request body: %+v", project)
 
-	// OwnerID validation
 	if err := validateUserId(project.OwnerID); err != nil {
 		log.WithError(err).Warnf("Invalid owner id: %s", project.OwnerID.Hex())
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -44,49 +43,39 @@ func CreateProjectValidator(c *fiber.Ctx) error {
 
 	// Name validation
 	if project.Name == "" {
-		log.Error("Project name is required")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Project name is required",
 		})
 	}
 	if len(project.Name) > 100 {
-		log.Error("Project name too long")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Project name must be at most 100 characters",
 		})
 	}
 
-	// Tags validation
 	if len(project.Tags) == 0 {
-		log.Error("At least one tag is required")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "At least one tag is required",
 		})
 	}
 
-	// Description validation
 	if project.Description == "" {
-		log.Error("Project description is required")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Project description is required",
 		})
 	}
 	if len(project.Description) > 500 {
-		log.Error("Project description too long")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Project description must be at most 500 characters",
 		})
 	}
 
-	// Category validation
 	if project.Category == "" {
-		log.Error("Project category is required")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Project category is required",
 		})
 	}
 
-	log.Info("Project validation passed")
 	return c.Next()
 }
 

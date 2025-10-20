@@ -26,8 +26,6 @@ func CreateRoleValidator(c *fiber.Ctx) error {
 		})
 	}
 
-	log.Debugf("Parsed request body: %+v", role)
-
 	if role.RoleName == "" {
 		log.Error("Role name is required")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
