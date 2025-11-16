@@ -27,7 +27,8 @@ jobs:
         id: current_version
         run: |
           # Extract version like X.Y.Z from VERSION.md (allow forms like v0.1 or v.0.1)
-          VERSION=$(grep -oP 'v\K[0-9]+(?:\.[0-9]+){0,2}' VERSION.md | head -1)
+          # Use extended grep (avoid PCRE dependency) and strip leading 'v' if present
+          VERSION=$(grep -oE 'v?[0-9]+(\.[0-9]+){0,2}' VERSION.md | head -1 | tr -d 'v' || true)
           # Remove any accidental leading dot
           VERSION="${VERSION#.}"
           # Normalize to MAJOR.MINOR.PATCH
@@ -43,6 +44,11 @@ jobs:
           fi
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "Current version: ${VERSION}"
+          # Debug output to help diagnose CI parsing issues
+          echo "----- DEBUG: VERSION.md contents -----"
+          sed -n '1,200p' VERSION.md || true
+          echo "----- DEBUG: parsed version value -----"
+          echo "${VERSION}"
 
       - name: Bump patch version
         id: bump_version
