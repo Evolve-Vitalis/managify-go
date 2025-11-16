@@ -39,9 +39,9 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/philhofer/fwd v1.1.3-0.20240916144458-20a13a1f6b7c // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.20.0 // indirect
+	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.59.1 // indirect
+	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/swaggo/files/v2 v2.0.2 // indirect
