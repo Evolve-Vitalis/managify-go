@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: doguhanniltextra/managify-backend:latest
+          image: doguhannilt/managify-backend:d1f3d8b521d9c6ffb2da690210794d4ccb0dc4d5
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
