@@ -14,9 +14,18 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
 FROM alpine:latest
 
-WORKDIR /root/
+WORKDIR /app
+
+# Create a non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
 COPY --from=builder /app/main .
 
+# Change ownership of the application binary
+RUN chown appuser:appgroup /app/main
+
+# Switch to non-root user
+USER appuser
 
 EXPOSE 8080
 
