@@ -35,28 +35,11 @@ variable "availability_zones" {
 }
 
 # Database
-variable "db_master_username" {
-  description = "Database master username"
+# Database
+variable "mongo_uri" {
+  description = "MongoDB Atlas Connection URI"
   type        = string
   sensitive   = true
-}
-
-variable "db_master_password" {
-  description = "Database master password"
-  type        = string
-  sensitive   = true
-}
-
-variable "db_instance_count" {
-  description = "Number of DB instances"
-  type        = number
-  default     = 1
-}
-
-variable "db_instance_class" {
-  description = "DB Instance Class"
-  type        = string
-  default     = "db.t3.medium"
 }
 
 # ECS & App Configuration

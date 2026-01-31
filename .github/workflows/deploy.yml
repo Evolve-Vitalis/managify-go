@@ -23,7 +23,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+          aws-region: ${{ vars.AWS_REGION || 'eu-central-1' }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -31,20 +31,17 @@ jobs:
           terraform_version: 1.6.0
           terraform_wrapper: false
 
-      # 1. Initialize Terraform - S3'ten state'i indirir
       - name: Terraform Init
         working-directory: ./terraform
         run: terraform init -input=false
 
-      # 2. Generate tfvars
       - name: Generate terraform.tfvars
         working-directory: ./terraform
         run: |
           cat <<EOF > terraform.tfvars
-          project_name       = "${{ vars.PROJECT_NAME || 'managify' }}"
-          aws_region         = "${{ vars.AWS_REGION || 'us-east-1' }}"
-          db_master_username = "${{ secrets.DB_MASTER_USERNAME }}"
-          db_master_password = "${{ secrets.DB_MASTER_PASSWORD }}"
+          project_name       = "${{ vars.PROJECT_NAME || 'managify-dev' }}"
+          aws_region         = "${{ vars.AWS_REGION || 'eu-central-1' }}"
+          mongo_uri          = "${{ secrets.MONGO_URI }}"
           secret_key         = "${{ secrets.APP_SECRET_KEY }}"
           smtp_password      = "${{ secrets.SMTP_PASSWORD }}"
           smtp_from          = "${{ vars.SMTP_FROM }}"
@@ -59,12 +56,10 @@ jobs:
           container_image    = "nginx:latest"
           EOF
 
-      # 3. ECR modülünü apply et
       - name: Deploy ECR Repository
         working-directory: ./terraform
         run: terraform apply -target=module.ecr -auto-approve -input=false
 
-      # 4. ECR URL'ini al
       - name: Get ECR Repository URL
         id: ecr-url
         working-directory: ./terraform
@@ -72,11 +67,9 @@ jobs:
           ECR_URL=$(terraform output -raw ecr_repository_url)
           echo "url=$ECR_URL" >> $GITHUB_OUTPUT
 
-      # 5. ECR'a login
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
       
-      # 6. Docker build & push
       - name: Build, tag, and push image
         id: build-image
         env:
@@ -89,7 +82,6 @@ jobs:
           docker push "${{ steps.ecr-url.outputs.url }}:latest"
           echo "image=$FULL_IMAGE" >> $GITHUB_OUTPUT
 
-      # 7. Tüm infrastructure'ı deploy et
       - name: Deploy Full Infrastructure
         working-directory: ./terraform
         run: |
@@ -98,11 +90,10 @@ jobs:
             -auto-approve \
             -input=false
 
-      # 8. Deployment bilgilerini göster
       - name: Show Deployment Info
         working-directory: ./terraform
         run: |
           echo "🎉 Deployment Complete!"
           echo "Application URL: http://$(terraform output -raw alb_dns_name)"
-          echo "Database: $(terraform output -raw db_endpoint)"
+
           echo "Image: ${{ steps.build-image.outputs.image }}"

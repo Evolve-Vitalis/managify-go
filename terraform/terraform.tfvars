@@ -1,5 +1,5 @@
 project_name = "managify-dev"
-aws_region   = "us-east-1"
+aws_region   = "eu-central-1"
 
 db_master_username = "admin"
 db_master_password = "ChangeMe123!"
@@ -14,7 +14,7 @@ smtp_host   = "smtp.example.com"
 smtp_port   = "587"
 
 # ECS
-container_image = "your-account-id.dkr.ecr.us-east-1.amazonaws.com/managify:latest"
+container_image = "your-account-id.dkr.ecr.eu-central-1.amazonaws.com/managify:latest"
 
 # Optional Overrides
 # api_max_limiter = "100"

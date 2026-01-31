@@ -36,18 +36,6 @@ module "network" {
   availability_zones   = var.availability_zones
 }
 
-module "database" {
-  source = "./modules/database"
-
-  project_name    = var.project_name
-  vpc_id          = module.network.vpc_id
-  subnet_ids      = module.network.private_subnet_ids
-  vpc_cidr        = var.vpc_cidr
-  master_username = var.db_master_username
-  master_password = var.db_master_password
-  instance_count  = var.db_instance_count
-  instance_class  = var.db_instance_class
-}
 
 module "loadbalancer" {
   source = "./modules/loadbalancer"
@@ -72,7 +60,7 @@ module "ecs" {
   aws_region            = var.aws_region
   
   container_environment = [
-    { name = "MONGO_URI", value = "mongodb://${var.db_master_username}:${var.db_master_password}@${module.database.endpoint}:${module.database.port}/${var.mongo_db_name}?tls=true&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false" },
+    { name = "MONGO_URI", value = var.mongo_uri },
     { name = "MONGO_DB", value = var.mongo_db_name },
     { name = "PORT", value = var.app_port },
     { name = "SECRET_KEY", value = var.secret_key },
@@ -89,13 +77,6 @@ module "ecs" {
 
     # Features
     { name = "SWAGGER", value = var.swagger_enabled },
-    { name = "METRICS", value = var.metrics_enabled },
-
-    # Test/Legacy params mapped to actual DB if needed, or left blank if purely for testing
-    { name = "MONGO_HOST_TEST", value = module.database.endpoint },
-    { name = "MONGO_USER_TEST", value = var.db_master_username },
-    { name = "MONGO_PASSWORD_TEST", value = var.db_master_password },
-    { name = "MONGO_DB_TEST", value = var.mongo_db_name },
-    { name = "MONGO_PORT", value = tostring(module.database.port) }
+    { name = "METRICS", value = var.metrics_enabled }
   ]
 }

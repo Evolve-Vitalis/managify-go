@@ -3,10 +3,7 @@ output "alb_dns_name" {
   value       = module.loadbalancer.dns_name
 }
 
-output "db_endpoint" {
-  description = "The endpoint of the database"
-  value       = module.database.endpoint
-}
+
 
 output "ecr_repository_url" {
   description = "The URL of the ECR repository"
