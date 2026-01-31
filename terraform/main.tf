@@ -5,6 +5,15 @@ terraform {
       version = "~> 5.0"
     }
   }
+
+  # Backend configuration - S3'te state sakla
+  backend "s3" {
+    bucket         = "managify-tfstate"
+    key            = "terraform.tfstate"
+    region         = "eu-central-1"
+    encrypt        = true
+    dynamodb_table = "managify-locks"
+  }
 }
 
 provider "aws" {

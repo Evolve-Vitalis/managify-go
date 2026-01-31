@@ -27,13 +27,16 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+          terraform_wrapper: false
 
-      # 1. Initialize Terraform
+      # 1. Initialize Terraform - S3'ten state'i indirir
       - name: Terraform Init
         working-directory: ./terraform
-        run: terraform init
+        run: terraform init -input=false
 
-      # 2. Generate tfvars for ECR creation AND full deployment
+      # 2. Generate tfvars
       - name: Generate terraform.tfvars
         working-directory: ./terraform
         run: |
@@ -42,96 +45,64 @@ jobs:
           aws_region         = "${{ vars.AWS_REGION || 'us-east-1' }}"
           db_master_username = "${{ secrets.DB_MASTER_USERNAME }}"
           db_master_password = "${{ secrets.DB_MASTER_PASSWORD }}"
-          
-          # App Secrets
-          secret_key    = "${{ secrets.APP_SECRET_KEY }}"
-          smtp_password = "${{ secrets.SMTP_PASSWORD }}"
-          
-          # App Config (Vars)
-          smtp_from   = "${{ vars.SMTP_FROM }}"
-          smtp_host   = "${{ vars.SMTP_HOST }}"
-          smtp_port   = "${{ vars.SMTP_PORT }}"
-          
-          # Optional Overrides (Use vars if set, otherwise fallback to defaults in variables.tf)
-          # Note: We only inject them if they exist effectively by using interpolation defaults closely matching terraform defaults
-          # or we can explicitly set them if we want to enforce control from GH side.
-          
-          api_max_limiter       = "${{ vars.API_MAX_LIMITER || '100' }}"
+          secret_key         = "${{ secrets.APP_SECRET_KEY }}"
+          smtp_password      = "${{ secrets.SMTP_PASSWORD }}"
+          smtp_from          = "${{ vars.SMTP_FROM }}"
+          smtp_host          = "${{ vars.SMTP_HOST }}"
+          smtp_port          = "${{ vars.SMTP_PORT }}"
+          api_max_limiter    = "${{ vars.API_MAX_LIMITER || '100' }}"
           rate_limit_expiration = "${{ vars.RATE_LIMIT_EXPIRATION || '1h' }}"
-          mongo_db_name         = "${{ vars.MONGO_DB_NAME || 'managify' }}"
-          swagger_enabled       = "${{ vars.SWAGGER_ENABLED || 'true' }}"
-          metrics_enabled       = "${{ vars.METRICS_ENABLED || 'true' }}"
-          app_port              = "${{ vars.APP_PORT || '8080' }}"
-
-          # Container Image (Placeholder for first apply, will be overwritten)
-          container_image = "placeholder" 
+          mongo_db_name      = "${{ vars.MONGO_DB_NAME || 'managify' }}"
+          swagger_enabled    = "${{ vars.SWAGGER_ENABLED || 'true' }}"
+          metrics_enabled    = "${{ vars.METRICS_ENABLED || 'true' }}"
+          app_port           = "${{ vars.APP_PORT || '8080' }}"
+          container_image    = "nginx:latest"
           EOF
 
-      # 3. Apply ONLY ECR module. Handles existing repo by importing if needed.
-      - name: Create or Import ECR Repo
+      # 3. ECR modülünü apply et
+      - name: Deploy ECR Repository
+        working-directory: ./terraform
+        run: terraform apply -target=module.ecr -auto-approve -input=false
+
+      # 4. ECR URL'ini al
+      - name: Get ECR Repository URL
+        id: ecr-url
         working-directory: ./terraform
         run: |
-          REPO_NAME="${{ vars.PROJECT_NAME || 'managify' }}"
-          
-          # Check if repository already exists
-          if aws ecr describe-repositories --repository-names "$REPO_NAME" > /dev/null 2>&1; then
-            echo "Repository $REPO_NAME exists. Importing into Terraform state..."
-            # Import the resource into the state. Use '|| true' to ignore if already in state.
-            terraform import -input=false module.ecr.aws_ecr_repository.this "$REPO_NAME" || true
-          else
-            echo "Repository $REPO_NAME does not exist. Creating..."
-          fi
-          
-          # Apply to ensure configuration matches (idempotent after import)
-          terraform apply -target=module.ecr -auto-approve -input=false
+          ECR_URL=$(terraform output -raw ecr_repository_url)
+          echo "url=$ECR_URL" >> $GITHUB_OUTPUT
 
-      # 4. Login to ECR
+      # 5. ECR'a login
       - name: Login to Amazon ECR
-        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
       
-      # 5. Build & Push
-      - name: Build, tag, and push image to Amazon ECR
+      # 6. Docker build & push
+      - name: Build, tag, and push image
         id: build-image
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ vars.PROJECT_NAME || 'managify' }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          FULL_IMAGE="${{ steps.ecr-url.outputs.url }}:$IMAGE_TAG"
+          docker build -t "$FULL_IMAGE" .
+          docker push "$FULL_IMAGE"
+          docker tag "$FULL_IMAGE" "${{ steps.ecr-url.outputs.url }}:latest"
+          docker push "${{ steps.ecr-url.outputs.url }}:latest"
+          echo "image=$FULL_IMAGE" >> $GITHUB_OUTPUT
 
-      # 6. Import existing resources to handle state conflicts (The "Skip if exists" Logic)
-      - name: Import Existing Resources
+      # 7. Tüm infrastructure'ı deploy et
+      - name: Deploy Full Infrastructure
         working-directory: ./terraform
         run: |
-          PROJECT_NAME="${{ vars.PROJECT_NAME || 'managify' }}"
-          LOG_GROUP_NAME="/ecs/$PROJECT_NAME"
-          ROLE_NAME="${PROJECT_NAME}-ecs-execution-role"
-          TG_NAME="${PROJECT_NAME}-tg"
-          
-          # 1. CloudWatch Log Group
-          if aws logs describe-log-groups --log-group-name-prefix "$LOG_GROUP_NAME" | grep -q "$LOG_GROUP_NAME"; then
-            echo "Log Group $LOG_GROUP_NAME exists. Importing..."
-            terraform import -input=false module.ecs.aws_cloudwatch_log_group.this "$LOG_GROUP_NAME" || true
-          fi
+          terraform apply \
+            -var="container_image=${{ steps.build-image.outputs.image }}" \
+            -auto-approve \
+            -input=false
 
-          # 2. IAM Role
-          if aws iam get-role --role-name "$ROLE_NAME" > /dev/null 2>&1; then
-            echo "IAM Role $ROLE_NAME exists. Importing..."
-            terraform import -input=false module.ecs.aws_iam_role.execution_role "$ROLE_NAME" || true
-          fi
-
-          # 3. Target Group (Need ARN for import)
-          TG_ARN=$(aws elbv2 describe-target-groups --names "$TG_NAME" --query "TargetGroups[0].TargetGroupArn" --output text 2>/dev/null || echo "")
-          if [ -n "$TG_ARN" ]; then
-             echo "Target Group $TG_NAME exists ($TG_ARN). Importing..."
-             terraform import -input=false module.loadbalancer.aws_lb_target_group.this "$TG_ARN" || true
-          fi
-
-      # 7. Update tfvars with real image and Apply EVERYTHING
-      - name: Update tfvars & Deploy App
+      # 8. Deployment bilgilerini göster
+      - name: Show Deployment Info
         working-directory: ./terraform
         run: |
-          terraform apply -auto-approve -input=false -var="container_image=${{ steps.build-image.outputs.image }}"
+          echo "🎉 Deployment Complete!"
+          echo "Application URL: http://$(terraform output -raw alb_dns_name)"
+          echo "Database: $(terraform output -raw db_endpoint)"
+          echo "Image: ${{ steps.build-image.outputs.image }}"
