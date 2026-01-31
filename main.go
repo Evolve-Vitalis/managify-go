@@ -31,9 +31,8 @@ import (
 // @BasePath /
 func main() {
 	middleware.InitLogger()
-	err := godotenv.Load()
-	if err != nil {
-		logrus.Fatal("Error loading .env file")
+	if err := godotenv.Load(); err != nil {
+		logrus.Warn("No .env file found, relying on environment variables")
 	}
 
 	if err := database.Connect(); err != nil {
