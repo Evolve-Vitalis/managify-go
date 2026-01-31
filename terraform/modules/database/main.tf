@@ -36,8 +36,7 @@ resource "aws_docdb_cluster" "this" {
   engine                  = "docdb"
   master_username         = var.master_username
   master_password         = var.master_password
-  backup_retention_period = 5
-  preferred_backup_window = "07:00-09:00"
+  backup_retention_period = 1
   skip_final_snapshot     = true
   db_subnet_group_name    = aws_docdb_subnet_group.this.name
   vpc_security_group_ids  = [aws_security_group.docdb.id]

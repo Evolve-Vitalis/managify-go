@@ -102,7 +102,35 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      # 6. Update tfvars with real image and Apply EVERYTHING
+      # 6. Import existing resources to handle state conflicts (The "Skip if exists" Logic)
+      - name: Import Existing Resources
+        working-directory: ./terraform
+        run: |
+          PROJECT_NAME="${{ vars.PROJECT_NAME || 'managify' }}"
+          LOG_GROUP_NAME="/ecs/$PROJECT_NAME"
+          ROLE_NAME="${PROJECT_NAME}-ecs-execution-role"
+          TG_NAME="${PROJECT_NAME}-tg"
+          
+          # 1. CloudWatch Log Group
+          if aws logs describe-log-groups --log-group-name-prefix "$LOG_GROUP_NAME" | grep -q "$LOG_GROUP_NAME"; then
+            echo "Log Group $LOG_GROUP_NAME exists. Importing..."
+            terraform import -input=false module.ecs.aws_cloudwatch_log_group.this "$LOG_GROUP_NAME" || true
+          fi
+
+          # 2. IAM Role
+          if aws iam get-role --role-name "$ROLE_NAME" > /dev/null 2>&1; then
+            echo "IAM Role $ROLE_NAME exists. Importing..."
+            terraform import -input=false module.ecs.aws_iam_role.execution_role "$ROLE_NAME" || true
+          fi
+
+          # 3. Target Group (Need ARN for import)
+          TG_ARN=$(aws elbv2 describe-target-groups --names "$TG_NAME" --query "TargetGroups[0].TargetGroupArn" --output text 2>/dev/null || echo "")
+          if [ -n "$TG_ARN" ]; then
+             echo "Target Group $TG_NAME exists ($TG_ARN). Importing..."
+             terraform import -input=false module.loadbalancer.aws_lb_target_group.this "$TG_ARN" || true
+          fi
+
+      # 7. Update tfvars with real image and Apply EVERYTHING
       - name: Update tfvars & Deploy App
         working-directory: ./terraform
         run: |
