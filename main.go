@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"managify/constant"
 	"managify/database"
 	"managify/internal/middleware"
@@ -70,7 +71,12 @@ func main() {
 	app.Use(pprof.New())
 	router.Routers(app)
 
-	app.Listen(os.Getenv("PORT"))
+	port := os.Getenv("PORT")
+	addr := fmt.Sprintf(":%s", port)
+	logrus.Infof("Starting server on %s", addr)
+	if err := app.Listen(addr); err != nil {
+		logrus.Fatalf("Failed to start server: %v", err)
+	}
 
 }
 
