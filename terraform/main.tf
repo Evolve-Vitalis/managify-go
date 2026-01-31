@@ -80,3 +80,4 @@ module "ecs" {
     { name = "METRICS", value = var.metrics_enabled }
   ]
 }
+
