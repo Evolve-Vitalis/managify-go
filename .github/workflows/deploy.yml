@@ -67,10 +67,23 @@ jobs:
           container_image = "placeholder" 
           EOF
 
-      # 3. Apply ONLY ECR module to ensure repo exists
-      - name: Create ECR Repo
+      # 3. Apply ONLY ECR module. Handles existing repo by importing if needed.
+      - name: Create or Import ECR Repo
         working-directory: ./terraform
-        run: terraform apply -target=module.ecr -auto-approve -input=false
+        run: |
+          REPO_NAME="${{ vars.PROJECT_NAME || 'managify' }}"
+          
+          # Check if repository already exists
+          if aws ecr describe-repositories --repository-names "$REPO_NAME" > /dev/null 2>&1; then
+            echo "Repository $REPO_NAME exists. Importing into Terraform state..."
+            # Import the resource into the state. Use '|| true' to ignore if already in state.
+            terraform import -input=false module.ecr.aws_ecr_repository.this "$REPO_NAME" || true
+          else
+            echo "Repository $REPO_NAME does not exist. Creating..."
+          fi
+          
+          # Apply to ensure configuration matches (idempotent after import)
+          terraform apply -target=module.ecr -auto-approve -input=false
 
       # 4. Login to ECR
       - name: Login to Amazon ECR
