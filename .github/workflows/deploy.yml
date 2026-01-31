@@ -1,0 +1,96 @@
+name: Deploy Infrastructure & App
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # 1. Initialize Terraform
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init
+
+      # 2. Generate tfvars for ECR creation AND full deployment
+      - name: Generate terraform.tfvars
+        working-directory: ./terraform
+        run: |
+          cat <<EOF > terraform.tfvars
+          project_name       = "${{ vars.PROJECT_NAME || 'managify' }}"
+          aws_region         = "${{ vars.AWS_REGION || 'us-east-1' }}"
+          db_master_username = "${{ secrets.DB_MASTER_USERNAME }}"
+          db_master_password = "${{ secrets.DB_MASTER_PASSWORD }}"
+          
+          # App Secrets
+          secret_key    = "${{ secrets.APP_SECRET_KEY }}"
+          smtp_password = "${{ secrets.SMTP_PASSWORD }}"
+          
+          # App Config (Vars)
+          smtp_from   = "${{ vars.SMTP_FROM }}"
+          smtp_host   = "${{ vars.SMTP_HOST }}"
+          smtp_port   = "${{ vars.SMTP_PORT }}"
+          
+          # Optional Overrides (Use vars if set, otherwise fallback to defaults in variables.tf)
+          # Note: We only inject them if they exist effectively by using interpolation defaults closely matching terraform defaults
+          # or we can explicitly set them if we want to enforce control from GH side.
+          
+          api_max_limiter       = "${{ vars.API_MAX_LIMITER || '100' }}"
+          rate_limit_expiration = "${{ vars.RATE_LIMIT_EXPIRATION || '1h' }}"
+          mongo_db_name         = "${{ vars.MONGO_DB_NAME || 'managify' }}"
+          swagger_enabled       = "${{ vars.SWAGGER_ENABLED || 'true' }}"
+          metrics_enabled       = "${{ vars.METRICS_ENABLED || 'true' }}"
+          app_port              = "${{ vars.APP_PORT || '8080' }}"
+
+          # Container Image (Placeholder for first apply, will be overwritten)
+          container_image = "placeholder" 
+          EOF
+
+      # 3. Apply ONLY ECR module to ensure repo exists
+      - name: Create ECR Repo
+        working-directory: ./terraform
+        run: terraform apply -target=module.ecr -auto-approve -input=false
+
+      # 4. Login to ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      # 5. Build & Push
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ vars.PROJECT_NAME || 'managify' }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      # 6. Update tfvars with real image and Apply EVERYTHING
+      - name: Update tfvars & Deploy App
+        working-directory: ./terraform
+        run: |
+          terraform apply -auto-approve -input=false -var="container_image=${{ steps.build-image.outputs.image }}"
