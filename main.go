@@ -40,13 +40,26 @@ func main() {
 	}
 
 	app := fiber.New()
+
 	host := os.Getenv("VUE_HOST")
+	var allowOrigins string
+	var allowCredentials bool
+
+	if host == "" {
+		logrus.Warn("VUE_HOST is not set, defaulting to wildcard origins without credentials")
+		allowOrigins = "*"
+		allowCredentials = false
+	} else {
+		allowOrigins = host
+		allowCredentials = true
+	}
+
 	allowMethods := "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS"
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     host,
+		AllowOrigins:     allowOrigins,
 		AllowMethods:     allowMethods,
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
-		AllowCredentials: true,
+		AllowCredentials: allowCredentials,
 	}))
 
 	apiLimiter(app)
