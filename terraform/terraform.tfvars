@@ -1,4 +1,4 @@
-project_name = "managify-dev"
+project_name = "managify"
 aws_region   = "eu-central-1"
 
 db_master_username = "admin"

@@ -39,7 +39,7 @@ jobs:
         working-directory: ./terraform
         run: |
           cat <<EOF > terraform.tfvars
-          project_name       = "${{ vars.PROJECT_NAME || 'managify-dev' }}"
+          project_name       = "${{ vars.PROJECT_NAME || 'managify' }}"
           aws_region         = "${{ vars.AWS_REGION || 'eu-central-1' }}"
           mongo_uri          = "${{ secrets.MONGO_URI }}"
           secret_key         = "${{ secrets.APP_SECRET_KEY }}"
