@@ -3,3 +3,16 @@
 *.tfstate
 *.tfstate.backup
 .terraform.lock.hcl
+
+# Binary / Exe dosyaları
+*.exe
+*.dll
+managify-go
+main
+
+# Terraform binary'leri
+.terraform/
+.terraform.lock.hcl
+
+# Vendor (Varsa)
+vendor/
