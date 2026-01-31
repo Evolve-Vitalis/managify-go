@@ -24,6 +24,12 @@ func Routers(app *fiber.App) {
 	RouterSwagger(app)
 	RouterMetrics(app)
 
+	// Health check for Load Balancer
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"status": "ok",
+		})
+	})
 }
 
 func RouterUser(app *fiber.App) {
