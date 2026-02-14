@@ -1,177 +1,119 @@
-# 📊 Managify
+# Managify
 
-A modern project management tool rebuilt with Go, featuring a clean architecture, RESTful API, and a beautiful React-based desktop application.
+Managify is an enterprise-grade Project Management Platform engineered for scalability and performance. Built with a cloud-native architecture, it leverages **Golang** for high-throughput backend services and **React** for a responsive frontend experience.
 
+This repository contains the complete source code for the backend API, frontend application, and infrastructure definitions.
 
-## ✨ Features
+## Key Features
 
-- **📋 Task Management** - Create, assign, and track tasks with status updates and priority levels
-- **👥 Team Collaboration** - Manage team members, roles, and permissions across projects
-- **📊 Project Tracking** - Monitor project progress with detailed dashboards and reports
-- **🔒 Secure Authentication** - JWT-based authentication with secure user sessions
-- **⚡ Fast Performance** - Built with Go for high performance and efficient resource usage
-- **🔌 RESTful API** - Well-documented API endpoints for easy integration
-- **🌙 Dark Theme** - Eye-friendly dark mode for comfortable extended use
-- **💻 Desktop App** - Native desktop experience built with Electron
+### Core Platform
+- **Project & Task Management**: Robust system for creating projects, assigning tasks, and tracking progress with custom statuses.
+- **Role-Based Access Control (RBAC)**: Granular permission system managing Users, Roles, and Team access.
+- **Secure Authentication**: JWT-based stateless authentication with secure password hashing.
+- **Real-time Performance**: Optimized Go backend handling concurrent requests with minimal latency.
 
+### Technical Excellence
+- **Clean Architecture**: Strictly layered codebase (Handler -> Service -> Repository) ensuring maintainability and testability.
+- **RESTful API**: Standardized API design with comprehensive **Swagger/OpenAPI** documentation.
+- **Containerization**: Fully Dockerized application with multi-stage builds for optimized image sizes.
+- **Infrastructure as Code (IaC)**: Complete **Terraform** configuration for deploying to **AWS ECS Fargate** with VPC, ALB, and ECR.
+- **Database**: MongoDB integration with advanced aggregation pipelines for complex data reporting.
 
+## Technology Stack
 
-## 🛠️ Tech Stack
+| Category | Technologies |
+|----------|--------------|
+| **Backend** | Go (Golang) 1.24, Fiber Framework, JWT |
+| **Frontend** | React 19, Vite, Tailwind CSS, Ant Design |
+| **Database** | MongoDB (Atlas / Self-hosted) |
+| **DevOps** | Docker, GitHub Actions |
+| **Cloud (AWS)** | ECS Fargate, ECR, ALB, VPC, Terraform |
+| **Documentation** | Swagger UI (OpenAPI 3.0) |
 
-### Backend
-- **Go 1.24+** - High-performance backend language
-- **Fiber Framework** - Express-inspired web framework for Go
-- **MongoDB** - NoSQL database for flexible data storage
-- **JWT Auth** - Secure token-based authentication
-- **Docker** - Containerization for easy deployment
-- **Swagger** - All endpoints are fully documented
+## Architecture Overview
 
-### Frontend
-- **React 19** - Modern UI library
-- **Vite** - Next-generation frontend tooling
-- **Tailwind CSS** - Utility-first CSS framework
-- **Ant Design** - Enterprise-class UI components
-- **Electron** - Desktop application framework
-- **Axios** - HTTP client for API requests
+The system follows a modular Monolith approach designed for easy transition to Microservices:
 
-### Architecture
-- **Clean Architecture** - Separation of concerns and maintainable codebase
-- **REST API** - Standard HTTP methods for communication
+```
+[Client (React/Mobile)] 
+       │
+       ▼
+[Load Balancer (AWS ALB)]
+       │
+       ▼
+[Managify API (Go/Fiber)] 
+  ├── Handler Layer (HTTP)
+  ├── Service Layer (Business Logic)
+  └── Repository Layer (Data Access)
+       │
+       ▼
+[MongoDB Cluster]
+```
 
-## 📦 Installation
+## Getting Started
 
 ### Prerequisites
-- Go 1.24 or higher
-- Node.js 18 or higher
-- MongoDB
-- Docker (optional)
+- **Go**: v1.24+
+- **Docker**: v20.10+
+- **MongoDB**: v6.0+
+- **Node.js**: v18+ (for Frontend)
 
-### Backend Setup
+### Local Development
 
-```bash
-# Clone the repository
-git clone https://github.com/Evolve-Vitalis/managify-go.git
-cd managify-go
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Evolve-Vitalis/managify-go.git
+   cd managify-go
+   ```
 
-# Install dependencies
-go mod download
+2. **Environment Setup**
+   ```bash
+   cp .env.example .env
+   # Update .env with your local MongoDB URI and configs
+   ```
 
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration
+3. **Run with Docker Compose (Recommended)**
+   ```bash
+   docker-compose up -d --build
+   ```
+   The API will be available at `http://localhost:3000` and Swagger docs at `http://localhost:3000/swagger`.
 
-# Run the application
-go run main.go
-```
+4. **Manual Run (Backend)**
+   ```bash
+   go mod download
+   go run main.go
+   ```
 
-### Frontend Setup
+## Deployment
 
-```bash
-# Navigate to frontend directory
-cd frontend
+### AWS ECS (Terraform)
+Infrastructure is managed via Terraform in the `/terraform` directory.
 
-# Install dependencies
-npm install
+1. Configure AWS Credentials.
+2. Initialize and Apply:
+   ```bash
+   cd terraform
+   terraform init
+   terraform apply -var="project_name=managify"
+   ```
 
-# Run development server
-npm run dev
+## API Documentation
 
-# Build for production
-npm run build
+Interactive API documentation is generated via Swagger.
 
-# Run as desktop app
-npm run electron:dev
-```
+- **Local**: `http://localhost:3000/swagger/index.html`
+- **Specification**: `/docs/swagger.json`
 
-### Docker Setup
+## Contributing
 
-```bash
-# Build and run with Docker Compose
-docker-compose up -d
+1. Fork the repository.
+2. Create a feature branch (`git checkout -b feature/access-control`).
+3. Commit your changes.
+4. Push to the branch and open a Pull Request.
 
-# Stop containers
-docker-compose down
-```
+## License
 
-## 🔧 Configuration
+This project is licensed under the MIT License.
 
-Create a `.env` file in the root directory:
-
-```env
-MONGO_HOST_TEST=
-MONGO_USER_TEST=
-MONGO_PASSWORD_TEST=
-MONGO_DB_TEST=
-MONGO_PORT=
-
-SECRET_KEY=
-
-PORT=
-
-API_MAX_LIMITER=
-RATE_LIMIT_EXPIRATION=
-
-SMTP_FROM=
-SMTP_PASSWORD=
-SMTP_HOST=
-SMTP_PORT=
-
-MONGO_URI=
-MONGO_DB=
-
-SWAGGER=
-METRICS=
-```
-
-
-## 🏗️ Project Structure
-
-```
-managify-go/
-├── backend/
-│   ├── internal/
-│   │   ├── handler/
-│   │   ├── middleware/
-│   │   ├── router/
-│   │   └── service/
-│   │   └── validation/
-│   │   └── metrics/
-│   ├── swagger/
-│   ├── database/
-│   ├── constant/
-│   ├── models/
-│   ├── utils/
-│   ├── test/
-│   ├── docs/
-├── managify-frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── assets/
-│   │   ├── constants/
-│   │   ├── content/
-│   │   └── App.jsx
-│   ├── public/
-├── docker-compose.yml
-├── Dockerfile
-└── README.md
-```
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-
-## 👨‍💻 Author
-
-**Doğuhannilt**
-
-- Email: [doguhannilt@gmail.com](mailto:doguhannilt@gmail.com)
-- LinkedIn: [linkedin.com/in/doguhannilt](https://linkedin.com/in/doguhannilt)
-- GitHub: [@Evolve-Vitalis](https://github.com/Evolve-Vitalis)
-
+---
+**Maintained by [Doğuhannilt](https://github.com/Evolve-Vitalis)**
